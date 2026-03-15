@@ -2,19 +2,28 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { bairros } from '@/data/bairros';
 import { Search, ChevronDown } from 'lucide-react';
+import type { Neighborhood } from '@/types/property';
 
-export default function SearchBlock() {
+interface SearchBlockProps {
+  neighborhoods: Neighborhood[];
+}
+
+export default function SearchBlock({ neighborhoods }: SearchBlockProps) {
   const router = useRouter();
   const [mode, setMode] = useState<'comprar' | 'alugar'>('comprar');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const filteredBairros = bairros.filter((b) =>
-    b.nome.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredBairros = searchQuery.length > 0
+    ? neighborhoods.filter((b) =>
+      b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.city.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    : [...neighborhoods]
+      .sort((a, b) => b.property_count - a.property_count)
+      .slice(0, 10);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -27,10 +36,10 @@ export default function SearchBlock() {
   }, []);
 
   const handleSearch = () => {
-    const selectedBairro = bairros.find(
-      (b) => b.nome.toLowerCase() === searchQuery.toLowerCase()
+    const selectedBairro = neighborhoods.find(
+      (b) => b.name.toLowerCase() === searchQuery.toLowerCase()
     );
-    
+
     if (selectedBairro) {
       router.push(`/${mode}/${selectedBairro.slug}`);
     } else {
@@ -50,12 +59,12 @@ export default function SearchBlock() {
           </div>
           <span className="text-xs tracking-widest text-gray-400 mt-1 uppercase">Negócios Imobiliários</span>
         </div>
-        
+
         <h1 className="text-3xl md:text-4xl font-heading font-bold text-center leading-tight text-black">
-          Encontre seu próximo lar em São José dos Campos
+          Encontre seu próximo lar em São José dos Campos e região
         </h1>
         <p className="text-base text-gray-500 text-center mt-2">
-          Compra, venda e locação de imóveis
+          Casas, apartamentos e terrenos em SJC, Jacareí e Caçapava
         </p>
       </div>
 
@@ -65,21 +74,19 @@ export default function SearchBlock() {
         <div className="flex bg-gray-50 rounded-xl p-1 mb-4">
           <button
             onClick={() => setMode('comprar')}
-            className={`flex-1 py-3 text-sm rounded-lg transition-all ${
-              mode === 'comprar'
-                ? 'bg-black text-white font-semibold shadow-sm'
-                : 'bg-transparent text-gray-500 hover:text-black'
-            }`}
+            className={`flex-1 py-3 text-sm rounded-lg transition-all ${mode === 'comprar'
+              ? 'bg-black text-white font-semibold shadow-sm'
+              : 'bg-transparent text-gray-500 hover:text-black'
+              }`}
           >
             Comprar
           </button>
           <button
             onClick={() => setMode('alugar')}
-            className={`flex-1 py-3 text-sm rounded-lg transition-all ${
-              mode === 'alugar'
-                ? 'bg-black text-white font-semibold shadow-sm'
-                : 'bg-transparent text-gray-500 hover:text-black'
-            }`}
+            className={`flex-1 py-3 text-sm rounded-lg transition-all ${mode === 'alugar'
+              ? 'bg-black text-white font-semibold shadow-sm'
+              : 'bg-transparent text-gray-500 hover:text-black'
+              }`}
           >
             Alugar
           </button>
@@ -91,7 +98,7 @@ export default function SearchBlock() {
             <Search className="absolute left-4 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Em qual bairro você quer morar?"
+              placeholder="Digite o bairro, ex: Urbanova, Satélite..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -111,12 +118,12 @@ export default function SearchBlock() {
                   key={bairro.slug}
                   className="w-full text-left px-4 py-3 hover:bg-brand-bg text-sm text-gray-700 transition-colors border-b border-gray-50 last:border-0"
                   onClick={() => {
-                    setSearchQuery(bairro.nome);
+                    setSearchQuery(bairro.name);
                     setIsDropdownOpen(false);
                   }}
                 >
-                  <span className="font-medium text-black block">{bairro.nome}</span>
-                  <span className="text-xs text-gray-400 truncate block mt-0.5">{bairro.descricao}</span>
+                  <span className="font-medium text-black block">{bairro.name}</span>
+                  <span className="text-xs text-gray-400 truncate block mt-0.5">{bairro.city} · {bairro.property_count} {bairro.property_count === 1 ? 'imóvel' : 'imóveis'}</span>
                 </button>
               ))}
             </div>
@@ -134,7 +141,7 @@ export default function SearchBlock() {
 
       {/* Footer text */}
       <div className="text-xs text-gray-400 text-center mt-8 tracking-wide">
-        24 anos de mercado · +3.000 imóveis negociados · São José dos Campos, SP
+        24 anos de mercado · +3.000 imóveis negociados · São José dos Campos e região
       </div>
     </div>
   );

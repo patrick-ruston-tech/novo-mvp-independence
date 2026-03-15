@@ -1,0 +1,417 @@
+import { createServerClient } from '@/lib/supabase/server';
+import type {
+  Property,
+  PropertyCard,
+  PropertyFilters,
+  PaginatedResponse,
+  Neighborhood,
+  Lead,
+  PropertySubmission,
+} from '@/types/property';
+
+// ============================================================
+// PROPERTY QUERIES
+// ============================================================
+
+// Campos retornados para cards (listagens) — evita carregar description/detail_url
+const CARD_FIELDS = `
+  id, slug, transaction_type, property_type,
+  price_sale, price_rent, price_condo,
+  neighborhood, city, address,
+  living_area, lot_area,
+  bedrooms, bathrooms, suites, garages,
+  images, featured, title
+`;
+
+/**
+ * Lista imóveis com filtros e paginação.
+ * Usado nas páginas /comprar e /alugar.
+ */
+export async function getProperties(
+  filters: PropertyFilters
+): Promise<PaginatedResponse<PropertyCard>> {
+  const supabase = createServerClient();
+  const {
+    transaction_type,
+    neighborhood,
+    property_type,
+    bedrooms_min,
+    price_min,
+    price_max,
+    garages_min,
+    features,
+    city,
+    sort_by = 'newest',
+    page = 1,
+    per_page = 12,
+  } = filters;
+
+  // Query base: apenas imóveis ativos
+  let query = supabase
+    .from('properties')
+    .select(CARD_FIELDS, { count: 'exact' })
+    .eq('status', 'active');
+
+  // Filtro principal: tipo de transação
+  // sale_rent aparece tanto em comprar quanto em alugar
+  if (transaction_type === 'sale') {
+    query = query.in('transaction_type', ['sale', 'sale_rent']);
+  } else if (transaction_type === 'rent') {
+    query = query.in('transaction_type', ['rent', 'sale_rent']);
+  }
+
+  // Filtros opcionais
+  if (neighborhood) {
+    query = query.eq('neighborhood', neighborhood);
+  }
+  if (property_type) {
+    query = query.eq('property_type', property_type);
+  }
+  if (bedrooms_min) {
+    query = query.gte('bedrooms', bedrooms_min);
+  }
+  if (garages_min) {
+    query = query.gte('garages', garages_min);
+  }
+  if (city) {
+    query = query.eq('city', city);
+  }
+
+  // Filtro de preço (usa price_sale ou price_rent conforme o tipo)
+  const priceCol =
+    transaction_type === 'rent' ? 'price_rent' : 'price_sale';
+  if (price_min) {
+    query = query.gte(priceCol, price_min);
+  }
+  if (price_max) {
+    query = query.lte(priceCol, price_max);
+  }
+
+  // Filtro por features (ex: Piscina, Churrasqueira)
+  if (features && features.length > 0) {
+    query = query.contains('features', features);
+  }
+
+  // Ordenação
+  switch (sort_by) {
+    case 'price_asc':
+      query = query.order(priceCol, { ascending: true, nullsFirst: false });
+      break;
+    case 'price_desc':
+      query = query.order(priceCol, { ascending: false, nullsFirst: false });
+      break;
+    case 'area_desc':
+      query = query.order('living_area', { ascending: false, nullsFirst: false });
+      break;
+    case 'newest':
+    default:
+      query = query.order('created_at', { ascending: false });
+      break;
+  }
+
+  // Paginação
+  const from = (page - 1) * per_page;
+  const to = from + per_page - 1;
+  query = query.range(from, to);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    console.error('getProperties error:', error);
+    return { data: [], total: 0, page, per_page, total_pages: 0 };
+  }
+
+  const total = count ?? 0;
+
+  return {
+    data: (data as PropertyCard[]) ?? [],
+    total,
+    page,
+    per_page,
+    total_pages: Math.ceil(total / per_page),
+  };
+}
+
+/**
+ * Busca imóvel completo pelo slug.
+ * Usado na página /imoveis/[slug].
+ */
+export async function getPropertyBySlug(
+  slug: string
+): Promise<Property | null> {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase
+    .from('properties')
+    .select('*')
+    .eq('slug', slug)
+    .eq('status', 'active')
+    .single();
+
+  if (error) {
+    console.error('getPropertyBySlug error:', error);
+    return null;
+  }
+
+  return data as Property;
+}
+
+/**
+ * Busca imóveis em destaque para a home.
+ * Prioriza SUPER_PREMIUM > PREMIUM > STANDARD.
+ */
+export async function getFeaturedProperties(
+  limit = 8
+): Promise<PropertyCard[]> {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase
+    .from('properties')
+    .select(CARD_FIELDS)
+    .eq('status', 'active')
+    .eq('featured', true)
+    .order('publication_type', { ascending: false }) // SUPER_PREMIUM first
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('getFeaturedProperties error:', error);
+    return [];
+  }
+
+  return (data as PropertyCard[]) ?? [];
+}
+
+/**
+ * Busca imóveis similares (mesmo bairro e tipo de transação).
+ * Exclui o imóvel atual. Usado na página de detalhe.
+ */
+export async function getSimilarProperties(
+  property: Property,
+  limit = 4
+): Promise<PropertyCard[]> {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase
+    .from('properties')
+    .select(CARD_FIELDS)
+    .eq('status', 'active')
+    .eq('neighborhood', property.neighborhood)
+    .neq('id', property.id)
+    .in(
+      'transaction_type',
+      property.transaction_type === 'sale'
+        ? ['sale', 'sale_rent']
+        : ['rent', 'sale_rent']
+    )
+    .limit(limit);
+
+  if (error) {
+    console.error('getSimilarProperties error:', error);
+    return [];
+  }
+
+  return (data as PropertyCard[]) ?? [];
+}
+
+/**
+ * Retorna todos os slugs de imóveis ativos.
+ * Usado para generateStaticParams (SSG).
+ */
+export async function getAllPropertySlugs(): Promise<string[]> {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase
+    .from('properties')
+    .select('slug')
+    .eq('status', 'active');
+
+  if (error) {
+    console.error('getAllPropertySlugs error:', error);
+    return [];
+  }
+
+  return data?.map((p) => p.slug) ?? [];
+}
+
+// ============================================================
+// NEIGHBORHOOD QUERIES
+// ============================================================
+
+/**
+ * Lista todos os bairros com imóveis ativos.
+ * Usado no combobox de busca da home e nos filtros.
+ */
+export async function getNeighborhoods(
+  city?: string
+): Promise<Neighborhood[]> {
+  const supabase = createServerClient();
+
+  let query = supabase
+    .from('neighborhoods')
+    .select('*')
+    .gt('property_count', 0)
+    .order('name', { ascending: true });
+
+  if (city) {
+    query = query.eq('city', city);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('getNeighborhoods error:', error);
+    return [];
+  }
+
+  return (data as Neighborhood[]) ?? [];
+}
+
+/**
+ * Busca bairro pelo slug.
+ * Usado para texto SEO nas páginas de listagem por bairro.
+ */
+export async function getNeighborhoodBySlug(
+  slug: string
+): Promise<Neighborhood | null> {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase
+    .from('neighborhoods')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
+  if (error) {
+    console.error('getNeighborhoodBySlug error:', error);
+    return null;
+  }
+
+  return data as Neighborhood;
+}
+
+// ============================================================
+// LEAD / SUBMISSION MUTATIONS
+// ============================================================
+
+/**
+ * Cria um novo lead (formulário de contato).
+ * Chamado client-side via Server Action ou API Route.
+ */
+export async function createLead(lead: Lead): Promise<{ success: boolean; error?: string }> {
+  const supabase = createServerClient();
+
+  const { error } = await supabase.from('leads').insert({
+    name: lead.name,
+    email: lead.email || null,
+    phone: lead.phone,
+    message: lead.message || null,
+    source: lead.source || 'website',
+    property_id: lead.property_id || null,
+    page_url: lead.page_url || null,
+  });
+
+  if (error) {
+    console.error('createLead error:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Cria uma submissão de imóvel (página Anunciar).
+ * Chamado client-side via Server Action ou API Route.
+ */
+export async function createPropertySubmission(
+  submission: PropertySubmission
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = createServerClient();
+
+  const { error } = await supabase.from('property_submissions').insert({
+    owner_name: submission.owner_name,
+    owner_email: submission.owner_email || null,
+    owner_phone: submission.owner_phone,
+    property_type: submission.property_type || null,
+    transaction_type: submission.transaction_type || null,
+    neighborhood: submission.neighborhood || null,
+    city: submission.city || 'São José dos Campos',
+    bedrooms: submission.bedrooms || null,
+    bathrooms: submission.bathrooms || null,
+    garages: submission.garages || null,
+    living_area: submission.living_area || null,
+    price_estimate: submission.price_estimate || null,
+    description: submission.description || null,
+  });
+
+  if (error) {
+    console.error('createPropertySubmission error:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+// ============================================================
+// STATS (para contadores na home, SEO, etc.)
+// ============================================================
+
+/**
+ * Retorna contagens rápidas para a home page.
+ */
+export async function getHomeStats(): Promise<{
+  total_sale: number;
+  total_rent: number;
+  total_neighborhoods: number;
+}> {
+  const supabase = createServerClient();
+
+  const [saleRes, rentRes, neighRes] = await Promise.all([
+    supabase
+      .from('properties')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .in('transaction_type', ['sale', 'sale_rent']),
+    supabase
+      .from('properties')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .in('transaction_type', ['rent', 'sale_rent']),
+    supabase
+      .from('neighborhoods')
+      .select('id', { count: 'exact', head: true })
+      .gt('property_count', 0),
+  ]);
+
+  return {
+    total_sale: saleRes.count ?? 0,
+    total_rent: rentRes.count ?? 0,
+    total_neighborhoods: neighRes.count ?? 0,
+  };
+
+}
+
+/**
+ * Top bairros com mais imóveis por tipo de transação.
+ * Usado nos cards de atalho nas páginas de listagem.
+ */
+export async function getTopNeighborhoods(
+  transactionType: 'sale' | 'rent',
+  city?: string,
+  limit = 4
+): Promise<{ name: string; slug: string; city: string; count: number }[]> {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase.rpc('get_top_neighborhoods', {
+    p_transaction_type: transactionType,
+    p_city: city || null,
+    p_limit: limit,
+  });
+
+  if (error) {
+    console.error('getTopNeighborhoods error:', error);
+    return [];
+  }
+
+  return (data as { name: string; slug: string; city: string; count: number }[]) ?? [];
+}

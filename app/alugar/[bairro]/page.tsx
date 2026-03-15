@@ -1,17 +1,55 @@
 import Link from 'next/link';
-import { properties } from '@/data/properties';
-import { bairros } from '@/data/bairros';
+import { getProperties, getNeighborhoodBySlug } from '@/lib/queries';
 import PropertyCard from '@/components/PropertyCard';
 import PropertyFilters from '@/components/PropertyFilters';
+import { PropertyFilters as PropertyFiltersType } from '@/types/property';
+import Pagination from '@/components/Pagination';
 
-export default async function AlugarBairroPage({ params }: { params: Promise<{ bairro: string }> }) {
+export default async function AlugarBairroPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ bairro: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const resolvedParams = await params;
-  const bairroInfo = bairros.find(b => b.slug === resolvedParams.bairro);
-  const filteredProperties = properties.filter(p => p.finalidade === 'locacao' && p.bairro === resolvedParams.bairro);
+  const resolvedSearch = await searchParams;
 
+  const bairroSlug = resolvedParams.bairro;
+  const bairroInfo = await getNeighborhoodBySlug(bairroSlug);
+
+  const page = Number(resolvedSearch.pagina) || 1;
+  const sort_by = (resolvedSearch.ordem as PropertyFiltersType['sort_by']) || 'newest';
+  const property_type = resolvedSearch.tipo as PropertyFiltersType['property_type'];
+  const bedrooms_min = Number(resolvedSearch.quartos) || undefined;
+  const price_min = Number(resolvedSearch.preco_min) || undefined;
+  const price_max = Number(resolvedSearch.preco_max) || undefined;
+  const garages_min = Number(resolvedSearch.garagens) || undefined;
+
+  const filters: PropertyFiltersType = {
+    transaction_type: 'rent',
+    neighborhood: bairroInfo ? bairroInfo.name : bairroSlug,
+    page,
+    per_page: 12,
+    sort_by,
+    property_type,
+    bedrooms_min,
+    price_min,
+    price_max,
+    garages_min,
+  };
+
+  const { data: properties, total, total_pages } = await getProperties(filters);
 
   if (!bairroInfo) {
-    return <div className="p-20 text-center">Bairro não encontrado.</div>;
+    return (
+      <div className="p-20 text-center flex flex-col items-center">
+        <h2 className="text-xl font-bold mb-4">Bairro não encontrado.</h2>
+        <Link href="/alugar" className="text-brand-red font-semibold hover:underline">
+          Ver todos os imóveis para alugar
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -21,16 +59,18 @@ export default async function AlugarBairroPage({ params }: { params: Promise<{ b
         <div className="text-sm text-gray-400 mb-2">
           <Link href="/alugar" className="hover:text-black transition-colors">Alugar</Link>
           <span className="mx-2">&gt;</span>
-          <span className="text-black">{bairroInfo.nome}</span>
+          <span className="text-black">{bairroInfo.name}</span>
         </div>
         <h1 className="text-2xl md:text-3xl font-heading font-bold text-black">
-          Apartamentos e casas para alugar no {bairroInfo.nome}
+          Imóveis para alugar em {bairroInfo.name}
         </h1>
-        <p className="text-base text-gray-500 mt-2 max-w-2xl">
-          {bairroInfo.descricao}
-        </p>
+        {bairroInfo.description && (
+          <p className="text-base text-gray-500 mt-2 max-w-2xl">
+            {bairroInfo.description}
+          </p>
+        )}
         <p className="text-sm text-gray-400 mt-4">
-          {filteredProperties.length} imóveis encontrados
+          {total} imóveis encontrados
         </p>
       </div>
 
@@ -38,13 +78,13 @@ export default async function AlugarBairroPage({ params }: { params: Promise<{ b
       <PropertyFilters />
 
       {/* Grid */}
-      {filteredProperties.length > 0 ? (
+      {properties.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {filteredProperties.map((property, idx) => (
-            <div 
-              key={property.id} 
+          {properties.map((property, idx) => (
+            <div
+              key={property.id}
               className="animate-in fade-in slide-in-from-bottom-4 fill-mode-both"
-              style={{ animationDelay: `${idx * 50}ms`, animationDuration: '500ms' }}
+              style={{ animationDelay: `${(idx % 12) * 50}ms`, animationDuration: '500ms' }}
             >
               <PropertyCard property={property} />
             </div>
@@ -55,6 +95,12 @@ export default async function AlugarBairroPage({ params }: { params: Promise<{ b
           <p className="text-gray-500">Nenhum imóvel encontrado neste bairro com os filtros atuais.</p>
         </div>
       )}
+      {/* Paginação */}
+      <Pagination
+        currentPage={page}
+        totalPages={total_pages}
+        basePath={`/alugar/${bairroSlug}`}
+      />
     </div>
   );
 }
