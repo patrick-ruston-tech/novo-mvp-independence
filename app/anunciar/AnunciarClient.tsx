@@ -1,20 +1,72 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { Check, Camera, X, Loader2 } from 'lucide-react';
 import StepIndicator from '@/components/StepIndicator';
 import { submitPropertyAction } from '@/lib/actions';
 import type { Neighborhood } from '@/types/property';
 
+// ============================================================
+// MÁSCARAS E VALIDAÇÕES
+// ============================================================
+
+/** Máscara de telefone: (12) 99999-9999 */
+function maskPhone(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : '';
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+/** Máscara de moeda: 1.500.000 */
+function maskCurrency(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+  const num = parseInt(digits, 10);
+  return num.toLocaleString('pt-BR');
+}
+
+/** Remove máscara de moeda e retorna número */
+function unmaskCurrency(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+/** Valida email básico */
+function isValidEmail(email: string): boolean {
+  if (!email) return true; // opcional
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+/** Valida telefone (mínimo 10 dígitos com DDD) */
+function isValidPhone(phone: string): boolean {
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 10;
+}
+
+// ============================================================
+// CIDADES
+// ============================================================
+
+const CITIES = [
+  'São José dos Campos',
+  'Jacareí',
+  'Caçapava',
+  'Jambeiro',
+];
+
+// ============================================================
+// COMPONENTE
+// ============================================================
+
 export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] }) {
   const [step, setStep] = useState(1);
   const [isSuccess, setIsSuccess] = useState(false);
-
   const [isPending, startTransition] = useTransition();
 
   // Form state
   const [finalidade, setFinalidade] = useState<'venda' | 'locacao' | null>(null);
   const [tipo, setTipo] = useState('');
+  const [cidade, setCidade] = useState('São José dos Campos');
   const [bairro, setBairro] = useState('');
   const [endereco, setEndereco] = useState('');
   const [numero, setNumero] = useState('');
@@ -38,13 +90,35 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
   const [email, setEmail] = useState('');
 
   const [errorUpdate, setErrorUpdate] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Filtra bairros pela cidade selecionada
+  const bairrosFiltrados = useMemo(() => {
+    return bairros.filter(b => b.city === cidade);
+  }, [bairros, cidade]);
+
+  // Reset bairro quando muda cidade
+  const handleCidadeChange = (novaCidade: string) => {
+    setCidade(novaCidade);
+    setBairro('');
+  };
 
   const handleNext = () => {
     setErrorUpdate(null);
+    setFieldErrors({});
+
+    // Validação Step 1
+    if (step === 1 && !finalidade) {
+      setErrorUpdate('Selecione a finalidade.');
+      return;
+    }
+
     setStep(prev => Math.min(prev + 1, 4));
   };
+
   const handlePrev = () => {
     setErrorUpdate(null);
+    setFieldErrors({});
     setStep(prev => Math.max(prev - 1, 1));
   };
 
@@ -58,15 +132,21 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
 
   const handleSubmit = () => {
     setErrorUpdate(null);
-    if (!nome || !telefone) {
-      setErrorUpdate('Nome e telefone são obrigatórios.');
+    const errors: Record<string, string> = {};
+
+    if (!nome.trim()) errors.nome = 'Nome é obrigatório.';
+    if (!telefone || !isValidPhone(telefone)) errors.telefone = 'Telefone inválido. Use (99) 99999-9999.';
+    if (email && !isValidEmail(email)) errors.email = 'E-mail inválido.';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
     startTransition(async () => {
       const formData = new FormData();
-      formData.append('owner_name', nome);
-      if (email) formData.append('owner_email', email);
+      formData.append('owner_name', nome.trim());
+      if (email) formData.append('owner_email', email.trim());
       formData.append('owner_phone', telefone);
       if (tipo) formData.append('property_type', tipo);
       
@@ -74,19 +154,18 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
       if (transactionTypeValue) formData.append('transaction_type', transactionTypeValue);
       
       if (bairro) formData.append('neighborhood', bairro);
-      formData.append('city', 'São José dos Campos'); // Fixed city for MVP
+      formData.append('city', cidade);
       
       if (quartos) formData.append('bedrooms', quartos.toString());
       if (banheiros) formData.append('bathrooms', banheiros.toString());
       if (vagas) formData.append('garages', vagas.toString());
       if (metragem) formData.append('living_area', metragem);
       
-      const rawPrice = valorPretendido.replace(/\D/g, '');
+      const rawPrice = unmaskCurrency(valorPretendido);
       if (rawPrice) formData.append('price_estimate', rawPrice);
 
       let fullDescription = descricao;
       
-      // Append address and others to description since they don't have columns
       const extraInfo = [];
       if (endereco) extraInfo.push(`Endereço: ${endereco}${numero ? `, ${numero}` : ''}${complemento ? ` - ${complemento}` : ''}`);
       if (suites > 0) extraInfo.push(`Suítes: ${suites}`);
@@ -121,6 +200,11 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
     setFotos(fotos.filter((_, i) => i !== index));
   };
 
+  // Estilo compartilhado dos inputs
+  const inputClass = "w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black";
+  const inputErrorClass = "w-full border border-red-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-red-200 focus:border-red-400 outline-none text-black";
+  const selectClass = "w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black bg-white";
+
   if (isSuccess) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 w-full text-center">
@@ -154,7 +238,7 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
 
       <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm mt-8">
         
-        {/* STEP 1 */}
+        {/* STEP 1 — Dados do Imóvel */}
         {step === 1 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
             <div>
@@ -187,41 +271,59 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de imóvel</label>
-              <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black bg-white">
+              <select value={tipo} onChange={(e) => setTipo(e.target.value)} className={selectClass}>
                 <option value="">Selecione...</option>
                 <option value="Apartamento">Apartamento</option>
                 <option value="Casa">Casa</option>
+                <option value="Sobrado">Sobrado</option>
                 <option value="Cobertura">Cobertura</option>
-                <option value="Comercial">Comercial</option>
                 <option value="Terreno">Terreno</option>
+                <option value="Comercial">Comercial</option>
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Bairro</label>
-              <select value={bairro} onChange={(e) => setBairro(e.target.value)} className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black bg-white">
-                <option value="">Selecione o bairro...</option>
-                {bairros.map(b => (
-                  <option key={b.slug} value={b.slug}>{b.name}</option>
-                ))}
-              </select>
+            {/* Cidade + Bairro */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
+                <select value={cidade} onChange={(e) => handleCidadeChange(e.target.value)} className={selectClass}>
+                  {CITIES.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Bairro</label>
+                <select value={bairro} onChange={(e) => setBairro(e.target.value)} className={selectClass}>
+                  <option value="">Selecione o bairro...</option>
+                  {bairrosFiltrados.map(b => (
+                    <option key={b.slug} value={b.name}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Endereço</label>
-                <input value={endereco} onChange={(e) => setEndereco(e.target.value)} type="text" placeholder="Rua, Avenida..." className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black" />
+                <input value={endereco} onChange={(e) => setEndereco(e.target.value)} type="text" placeholder="Rua, Avenida..." className={inputClass} />
               </div>
               <div className="col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Número</label>
-                <input value={numero} onChange={(e) => setNumero(e.target.value)} type="text" placeholder="Ex: 123" className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black" />
+                <input value={numero} onChange={(e) => setNumero(e.target.value)} type="text" placeholder="Ex: 123" className={inputClass} />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Complemento <span className="text-gray-400 font-normal">(opcional)</span></label>
-              <input value={complemento} onChange={(e) => setComplemento(e.target.value)} type="text" placeholder="Apto, Bloco, Casa..." className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black" />
+              <input value={complemento} onChange={(e) => setComplemento(e.target.value)} type="text" placeholder="Apto, Bloco, Casa..." className={inputClass} />
             </div>
+
+            {errorUpdate && (
+              <div className="p-3 bg-red-50 text-red-600 text-sm font-medium border border-red-200 rounded-xl">
+                {errorUpdate}
+              </div>
+            )}
 
             <button 
               onClick={handleNext}
@@ -233,7 +335,7 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
           </div>
         )}
 
-        {/* STEP 2 */}
+        {/* STEP 2 — Detalhes e Valores */}
         {step === 2 && (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
             
@@ -274,19 +376,56 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Metragem (m²)</label>
-                  <input value={metragem} onChange={(e) => setMetragem(e.target.value)} type="number" placeholder="Ex: 120" className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black" />
+                  <input 
+                    value={metragem} 
+                    onChange={(e) => setMetragem(e.target.value.replace(/\D/g, ''))} 
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Ex: 120" 
+                    className={inputClass} 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Valor pretendido (R$)</label>
-                  <input value={valorPretendido} onChange={(e) => setValorPretendido(e.target.value)} type="text" placeholder="Ex: 1.500.000" className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black" />
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">R$</span>
+                    <input 
+                      value={valorPretendido} 
+                      onChange={(e) => setValorPretendido(maskCurrency(e.target.value))} 
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="1.500.000" 
+                      className={`${inputClass} pl-10`}
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Condomínio (R$)</label>
-                  <input value={condominio} onChange={(e) => setCondominio(e.target.value)} type="text" placeholder="Opcional" className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Condomínio (R$) <span className="text-gray-400 font-normal">opcional</span></label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">R$</span>
+                    <input 
+                      value={condominio} 
+                      onChange={(e) => setCondominio(maskCurrency(e.target.value))} 
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="800" 
+                      className={`${inputClass} pl-10`}
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">IPTU (R$)</label>
-                  <input value={iptu} onChange={(e) => setIptu(e.target.value)} type="text" placeholder="Opcional" className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">IPTU anual (R$) <span className="text-gray-400 font-normal">opcional</span></label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">R$</span>
+                    <input 
+                      value={iptu} 
+                      onChange={(e) => setIptu(maskCurrency(e.target.value))} 
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="1.200" 
+                      className={`${inputClass} pl-10`}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -327,7 +466,7 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
           </div>
         )}
 
-        {/* STEP 3 */}
+        {/* STEP 3 — Fotos e Descrição */}
         {step === 3 && (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
             
@@ -371,9 +510,9 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
               <h3 className="font-heading font-bold text-lg text-black mb-4">Descrição</h3>
               <textarea 
                 value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
+                onChange={(e) => setDescricao(e.target.value.slice(0, 2000))}
                 placeholder="Conte um pouco sobre o imóvel. Destaque os pontos fortes, reformas recentes, vizinhança..." 
-                className="w-full min-h-[200px] border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black resize-none"
+                className={`${inputClass} min-h-[200px] resize-none`}
               ></textarea>
               <div className="text-right text-xs text-gray-400 mt-2">{descricao.length}/2000</div>
             </div>
@@ -395,7 +534,7 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
           </div>
         )}
 
-        {/* STEP 4 */}
+        {/* STEP 4 — Contato e Envio */}
         {step === 4 && (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
             
@@ -404,15 +543,38 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Nome completo *</label>
-                  <input value={nome} onChange={(e) => setNome(e.target.value)} type="text" className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black" required />
+                  <input 
+                    value={nome} 
+                    onChange={(e) => { setNome(e.target.value); setFieldErrors(prev => ({...prev, nome: ''})); }} 
+                    type="text" 
+                    placeholder="Seu nome"
+                    className={fieldErrors.nome ? inputErrorClass : inputClass} 
+                  />
+                  {fieldErrors.nome && <p className="text-xs text-red-500 mt-1">{fieldErrors.nome}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Telefone / WhatsApp *</label>
-                  <input value={telefone} onChange={(e) => setTelefone(e.target.value)} type="tel" className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black" required />
+                  <input 
+                    value={telefone} 
+                    onChange={(e) => { setTelefone(maskPhone(e.target.value)); setFieldErrors(prev => ({...prev, telefone: ''})); }} 
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="(12) 99999-9999"
+                    maxLength={15}
+                    className={fieldErrors.telefone ? inputErrorClass : inputClass} 
+                  />
+                  {fieldErrors.telefone && <p className="text-xs text-red-500 mt-1">{fieldErrors.telefone}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">E-mail</label>
-                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none text-black" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">E-mail <span className="text-gray-400 font-normal">(opcional)</span></label>
+                  <input 
+                    value={email} 
+                    onChange={(e) => { setEmail(e.target.value); setFieldErrors(prev => ({...prev, email: ''})); }} 
+                    type="email" 
+                    placeholder="seu@email.com"
+                    className={fieldErrors.email ? inputErrorClass : inputClass} 
+                  />
+                  {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                 </div>
               </div>
             </div>
@@ -438,6 +600,14 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
                   <button onClick={() => setStep(1)} className="text-xs text-brand-red font-medium hover:underline">Editar</button>
                 </div>
               </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Local</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-black">{bairro ? `${bairro}, ${cidade}` : cidade}</span>
+                  <button onClick={() => setStep(1)} className="text-xs text-brand-red font-medium hover:underline">Editar</button>
+                </div>
+              </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500">Características</span>
@@ -446,6 +616,16 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
                   <button onClick={() => setStep(2)} className="text-xs text-brand-red font-medium hover:underline">Editar</button>
                 </div>
               </div>
+
+              {valorPretendido && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Valor</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-black">R$ {valorPretendido}</span>
+                    <button onClick={() => setStep(2)} className="text-xs text-brand-red font-medium hover:underline">Editar</button>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500">Fotos</span>
