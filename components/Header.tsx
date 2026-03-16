@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Header() {
   const pathname = usePathname();
@@ -50,10 +51,8 @@ export default function Header() {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100 h-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group" onClick={closeMenu}>
-            <span className="text-2xl font-extrabold tracking-tighter font-heading text-black">IND</span>
-            <div className="w-2 h-2 bg-brand-red group-hover:bg-brand-dark-red transition-colors"></div>
-            <span className="text-sm tracking-widest font-semibold text-black hidden sm:block">INDEPENDENCE</span>
+          <Link href="/" className="flex items-center group" onClick={closeMenu}>
+            <Image src="/logo.jpg" alt="Independence Negócios Imobiliários" width={140} height={48} className="h-10 w-auto" priority />
           </Link>
 
           {/* Desktop Nav */}
@@ -62,11 +61,10 @@ export default function Header() {
               <Link
                 key={link.name}
                 href={link.href}
-                className={`text-sm transition-colors ${
-                  isActive(link.href)
-                    ? 'text-black font-semibold'
-                    : 'text-gray-600 font-medium hover:text-black'
-                }`}
+                className={`text-sm transition-colors ${isActive(link.href)
+                  ? 'text-black font-semibold'
+                  : 'text-gray-600 font-medium hover:text-black'
+                  }`}
               >
                 {link.name}
               </Link>
@@ -94,13 +92,13 @@ export default function Header() {
       {isMounted && (
         <div className="md:hidden fixed inset-0 z-[100] flex justify-end">
           {/* Fundo escurecido (Backdrop) */}
-          <div 
+          <div
             className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
             onClick={closeMenu}
           />
-          
+
           {/* Drawer */}
-          <div 
+          <div
             className={`relative h-full w-[320px] max-w-[85vw] bg-white shadow-2xl flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
           >
             {/* Topo: Botão X e Logo */}
@@ -111,31 +109,28 @@ export default function Header() {
               >
                 <X size={24} />
               </button>
-              <Link href="/" className="flex items-center gap-2" onClick={closeMenu}>
-                <span className="text-xl font-extrabold tracking-tighter font-heading text-black">IND</span>
-                <div className="w-1.5 h-1.5 bg-brand-red"></div>
-                <span className="text-xs tracking-widest font-semibold text-black">INDEPENDENCE</span>
+              <Link href="/" className="flex items-center" onClick={closeMenu}>
+                <Image src="/logo.jpg" alt="Independence" width={120} height={40} className="h-8 w-auto" />
               </Link>
             </div>
-            
+
             {/* Nav Links */}
             <nav className="flex-1 flex flex-col w-full pt-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`block px-6 py-4 border-b border-gray-100 text-base transition-colors ${
-                    isActive(link.href)
-                      ? 'bg-gray-50 text-black font-medium'
-                      : 'text-gray-800 hover:bg-gray-50'
-                  }`}
+                  className={`block px-6 py-4 border-b border-gray-100 text-base transition-colors ${isActive(link.href)
+                    ? 'bg-gray-50 text-black font-medium'
+                    : 'text-gray-800 hover:bg-gray-50'
+                    }`}
                   onClick={closeMenu}
                 >
                   {link.name}
                 </Link>
               ))}
             </nav>
-            
+
             {/* Botão Entrar na base */}
             <div className="p-6 mt-auto w-full border-t border-gray-100">
               <button className="w-full bg-brand-red hover:bg-brand-dark-red text-white font-semibold py-3.5 rounded-lg transition-colors">

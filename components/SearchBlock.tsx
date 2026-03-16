@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, ChevronDown } from 'lucide-react';
 import type { Neighborhood } from '@/types/property';
+import Image from 'next/image';
 
 interface SearchBlockProps {
   neighborhoods: Neighborhood[];
@@ -52,12 +53,7 @@ export default function SearchBlock({ neighborhoods }: SearchBlockProps) {
       {/* Header do SearchBlock */}
       <div className="text-center mb-8">
         <div className="flex flex-col items-center justify-center mb-6">
-          <div className="flex items-center gap-2">
-            <span className="text-3xl font-extrabold tracking-tighter font-heading text-black">IND</span>
-            <div className="w-2.5 h-2.5 bg-brand-red"></div>
-            <span className="text-base tracking-widest font-semibold text-black">INDEPENDENCE</span>
-          </div>
-          <span className="text-xs tracking-widest text-gray-400 mt-1 uppercase">Negócios Imobiliários</span>
+          <Image src="/logo.jpg" alt="Independence Negócios Imobiliários" width={180} height={60} className="h-16 w-auto" />
         </div>
 
         <h1 className="text-3xl md:text-4xl font-heading font-bold text-center leading-tight text-black">
