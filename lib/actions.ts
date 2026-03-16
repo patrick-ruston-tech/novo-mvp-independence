@@ -1,10 +1,15 @@
 'use server';
 
 import { createLead, createPropertySubmission } from '@/lib/queries';
+import { syncLeadToGHL, syncSubmissionToGHL } from '@/lib/ghl';
 import type { Lead, PropertySubmission } from '@/types/property';
+import { createServerClient } from '@/lib/supabase/server';
 
 /**
  * Server Action: enviar lead (formulário de contato no detalhe do imóvel)
+ * 1. Salva no Supabase
+ * 2. Cria contato no GHL com tag "lead-imovel"
+ * 3. Atualiza o lead no Supabase com o ghl_contact_id
  */
 export async function submitLeadAction(formData: FormData) {
   const lead: Lead = {
@@ -22,12 +27,54 @@ export async function submitLeadAction(formData: FormData) {
     return { success: false, error: 'Nome e telefone são obrigatórios.' };
   }
 
+  // 1. Salva no Supabase
   const result = await createLead(lead);
-  return result;
+  if (!result.success) return result;
+
+  // 2. Busca o external_id do imóvel (se tiver property_id)
+  let propertyCode: string | undefined;
+  if (lead.property_id) {
+    try {
+      const supabase = createServerClient();
+      const { data } = await supabase
+        .from('properties')
+        .select('external_id')
+        .eq('id', lead.property_id)
+        .single();
+      propertyCode = data?.external_id;
+    } catch (e) {
+      // Não bloqueia o fluxo se falhar
+    }
+  }
+
+  // 3. Sync com GHL (async, não bloqueia resposta ao usuário)
+  syncLeadToGHL({
+    name: lead.name,
+    email: lead.email,
+    phone: lead.phone,
+    propertyCode,
+    pageUrl: lead.page_url,
+  }).then((ghlResult) => {
+    if (ghlResult.success && ghlResult.contactId) {
+      // Atualiza o lead no Supabase com o ID do GHL
+      const supabase = createServerClient();
+      supabase
+        .from('leads')
+        .update({ ghl_contact_id: ghlResult.contactId })
+        .eq('phone', lead.phone)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .then(() => {});
+    }
+  }).catch(console.error);
+
+  return { success: true };
 }
 
 /**
  * Server Action: anunciar imóvel (formulário multi-step)
+ * 1. Salva no Supabase (property_submissions)
+ * 2. Cria contato no GHL com tag "lead-anunciar"
  */
 export async function submitPropertyAction(formData: FormData) {
   const submission: PropertySubmission = {
@@ -61,6 +108,20 @@ export async function submitPropertyAction(formData: FormData) {
     return { success: false, error: 'Nome e telefone são obrigatórios.' };
   }
 
+  // 1. Salva no Supabase
   const result = await createPropertySubmission(submission);
-  return result;
+  if (!result.success) return result;
+
+  // 2. Sync com GHL (async)
+  syncSubmissionToGHL({
+    ownerName: submission.owner_name,
+    ownerEmail: submission.owner_email,
+    ownerPhone: submission.owner_phone,
+    propertyType: submission.property_type,
+    neighborhood: submission.neighborhood,
+    city: submission.city,
+    priceEstimate: submission.price_estimate?.toString(),
+  }).catch(console.error);
+
+  return { success: true };
 }
