@@ -1,88 +1,207 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
 
 export default function PropertyGallery({ images }: { images: string[] }) {
-  const [mainImageIdx, setMainImageIdx] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
-  const nextImage = () => setMainImageIdx((prev) => (prev + 1) % images.length);
-  const prevImage = () => setMainImageIdx((prev) => (prev - 1 + images.length) % images.length);
+  const gridImages = images.slice(0, 5);
+  const extraCount = images.length - 5;
 
+  const nextImage = () => setCurrentIdx((prev) => (prev + 1) % images.length);
+  const prevImage = () => setCurrentIdx((prev) => (prev - 1 + images.length) % images.length);
+
+  const openFullscreen = (idx: number) => {
+    setCurrentIdx(idx);
+    setIsFullscreen(true);
+  };
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') nextImage();
+      if (e.key === 'ArrowLeft') prevImage();
+      if (e.key === 'Escape') setIsFullscreen(false);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [isFullscreen]);
+
+  const handleImageLoad = (idx: number) => {
+    setLoadedImages(prev => new Set(prev).add(idx));
+  };
+
+  if (images.length === 0) {
+    return (
+      <div className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center">
+        <p className="text-gray-400">Sem fotos disponíveis</p>
+      </div>
+    );
+  }
+
+  // Mobile: single image with counter
+  // Desktop: modular grid (1 large + 4 small)
   return (
     <>
-      <div className="space-y-4">
-        {/* Imagem Principal */}
-        <div className="aspect-video rounded-xl overflow-hidden relative group">
+      {/* ===== GRID MODULAR ===== */}
+      <div className="rounded-xl overflow-hidden">
+
+        {/* Mobile: imagem única */}
+        <div className="md:hidden relative aspect-[4/3]">
+          {!loadedImages.has(0) && (
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" />
+          )}
           <Image
-            src={images[mainImageIdx]}
-            alt="Foto Principal do Imóvel"
+            src={images[0]}
+            alt="Foto principal"
             fill
-            className="object-cover transition-opacity duration-500"
-            unoptimized
+            className={`object-cover transition-opacity duration-300 ${loadedImages.has(0) ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => handleImageLoad(0)}
+            priority
           />
           <button
-            onClick={() => setIsFullscreen(true)}
-            className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-black text-sm font-medium px-4 py-2 rounded-lg shadow-sm transition-colors opacity-0 group-hover:opacity-100"
+            onClick={() => openFullscreen(0)}
+            className="absolute bottom-3 right-3 bg-white/90 hover:bg-white text-black text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
           >
-            Ver todas ({images.length})
+            <Grid className="w-3.5 h-3.5" />
+            Ver {images.length} fotos
           </button>
         </div>
 
-        {/* Thumbnails */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {images.map((img, idx) => (
-            <button
-              key={idx}
-              onClick={() => setMainImageIdx(idx)}
-              className={`relative flex-shrink-0 aspect-square w-16 rounded-lg overflow-hidden transition-all ${idx === mainImageIdx ? 'ring-2 ring-black ring-offset-2' : 'opacity-70 hover:opacity-100'
-                }`}
-            >
-              <Image src={img} alt={`Miniatura ${idx + 1}`} fill className="object-cover" unoptimized />
-            </button>
-          ))}
+        {/* Desktop: grid modular */}
+        <div className="hidden md:grid md:grid-cols-4 md:grid-rows-2 gap-1.5 h-[420px]">
+
+          {/* Foto principal (2 colunas, 2 linhas) */}
+          <div
+            className="col-span-2 row-span-2 relative cursor-pointer group"
+            onClick={() => openFullscreen(0)}
+          >
+            {!loadedImages.has(0) && (
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" />
+            )}
+            <Image
+              src={images[0]}
+              alt="Foto principal"
+              fill
+              className={`object-cover transition-all duration-300 group-hover:brightness-90 ${loadedImages.has(0) ? 'opacity-100' : 'opacity-0'}`}
+              onLoad={() => handleImageLoad(0)}
+              priority
+            />
+          </div>
+
+          {/* 4 fotos menores */}
+          {gridImages.slice(1).map((img, idx) => {
+            const realIdx = idx + 1;
+            const isLast = realIdx === gridImages.length - 1 && extraCount > 0;
+
+            return (
+              <div
+                key={realIdx}
+                className="relative cursor-pointer group"
+                onClick={() => openFullscreen(realIdx)}
+              >
+                {!loadedImages.has(realIdx) && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" />
+                )}
+                <Image
+                  src={img}
+                  alt={`Foto ${realIdx + 1}`}
+                  fill
+                  className={`object-cover transition-all duration-300 group-hover:brightness-90 ${loadedImages.has(realIdx) ? 'opacity-100' : 'opacity-0'}`}
+                  onLoad={() => handleImageLoad(realIdx)}
+
+                />
+                {isLast && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-colors group-hover:bg-black/50">
+                    <span className="text-white text-sm font-semibold">+{extraCount} fotos</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Se tem menos de 5 fotos, preenche os espaços */}
+          {gridImages.length < 5 &&
+            Array.from({ length: 5 - gridImages.length }).map((_, i) => (
+              <div key={`empty-${i}`} className="bg-gray-100" />
+            ))
+          }
         </div>
       </div>
 
-      {/* Modal Fullscreen */}
+      {/* ===== LIGHTBOX FULLSCREEN ===== */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col animate-in fade-in duration-300">
-          <div className="flex items-center justify-between p-6 text-white">
-            <span className="text-sm font-medium">{mainImageIdx + 1} / {images.length}</span>
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col animate-in fade-in duration-200">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+            <span className="text-white/80 text-sm font-medium">
+              {currentIdx + 1} / {images.length}
+            </span>
             <button
               onClick={() => setIsFullscreen(false)}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="flex-grow flex items-center justify-center relative px-12">
+          {/* Image area */}
+          <div className="flex-1 flex items-center justify-center relative px-4 sm:px-16">
             <button
               onClick={prevImage}
-              className="absolute left-6 p-3 hover:bg-white/10 rounded-full transition-colors text-white"
+              className="absolute left-2 sm:left-4 p-2 sm:p-3 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white z-10"
             >
-              <ChevronLeft className="w-8 h-8" />
+              <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
             </button>
 
-            <div className="w-full max-w-5xl aspect-video relative rounded-xl overflow-hidden transition-colors duration-500">
+            <div className="w-full max-w-5xl h-[70vh] relative">
               <Image
-                src={images[mainImageIdx]}
-                alt="Foto em Tela Cheia"
+                src={images[currentIdx]}
+                alt={`Foto ${currentIdx + 1}`}
                 fill
                 className="object-contain"
-                unoptimized
+
               />
             </div>
 
             <button
               onClick={nextImage}
-              className="absolute right-6 p-3 hover:bg-white/10 rounded-full transition-colors text-white"
+              className="absolute right-2 sm:right-4 p-2 sm:p-3 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white z-10"
             >
-              <ChevronRight className="w-8 h-8" />
+              <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
             </button>
+          </div>
+
+          {/* Thumbnail strip */}
+          <div className="px-4 sm:px-8 py-3 sm:py-4">
+            <div className="flex gap-1.5 overflow-x-auto justify-center pb-1">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentIdx(idx)}
+                  className={`relative flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden transition-all ${idx === currentIdx
+                    ? 'ring-2 ring-white opacity-100'
+                    : 'opacity-40 hover:opacity-70'
+                    }`}
+                >
+                  <Image
+                    src={img}
+                    alt={`Miniatura ${idx + 1}`}
+                    fill
+                    className="object-cover"
+
+                  />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

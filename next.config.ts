@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'static.arboimoveis.com.br',
+        hostname: 'pub-f0095dfa5cc64e4592f43de7553ef5e2.r2.dev',
         pathname: '/**',
       },
     ],
@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ['motion'],
   webpack: (config, { dev }) => {
     // HMR is disabled in AI Studio via DISABLE_HMR env var.
-    // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+    // Do not modify file watching is disabled to prevent flickering during agent edits.
     if (dev && process.env.DISABLE_HMR === 'true') {
       config.watchOptions = {
         ignored: /.*/,

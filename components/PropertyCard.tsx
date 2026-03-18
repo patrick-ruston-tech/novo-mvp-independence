@@ -53,7 +53,6 @@ export default function PropertyCard({ property }: { property: PropertyCardType 
               }`}
             onLoad={() => setImageLoaded(true)}
             loading="lazy"
-            unoptimized
           />
 
           {/* Tags */}

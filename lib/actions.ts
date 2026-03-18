@@ -47,29 +47,48 @@ export async function submitLeadAction(formData: FormData) {
     }
   }
 
-  // 3. Sync com GHL (async, não bloqueia resposta ao usuário)
-  syncLeadToGHL({
-    name: lead.name,
-    email: lead.email,
-    phone: lead.phone,
-    propertyCode,
-    pageUrl: lead.page_url,
-  }).then((ghlResult) => {
+  // 3. Sync com GHL (await para garantir que salva o contact_id)
+  try {
+    const ghlResult = await syncLeadToGHL({
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      propertyCode,
+      pageUrl: lead.page_url,
+    });
+
     if (ghlResult.success && ghlResult.contactId) {
-      // Atualiza o lead no Supabase com o ID do GHL
       const supabase = createServerClient();
-      supabase
+
+      // Busca o lead mais recente com esse telefone
+      const { data: recentLead } = await supabase
         .from('leads')
-        .update({ ghl_contact_id: ghlResult.contactId })
+        .select('id')
         .eq('phone', lead.phone)
         .order('created_at', { ascending: false })
         .limit(1)
-        .then(() => {});
+        .single();
+
+      if (recentLead) {
+        const { error: updateError } = await supabase
+          .from('leads')
+          .update({ ghl_contact_id: ghlResult.contactId })
+          .eq('id', recentLead.id);
+
+        if (updateError) console.error('Failed to save ghl_contact_id:', updateError);
+        else console.log('Saved ghl_contact_id for lead:', recentLead.id);
+      }
     }
-  }).catch(console.error);
+  } catch (e) {
+    console.error('GHL sync error:', e);
+  }
 
   return { success: true };
+
 }
+
+
+
 
 /**
  * Server Action: anunciar imóvel (formulário multi-step)
@@ -112,16 +131,38 @@ export async function submitPropertyAction(formData: FormData) {
   const result = await createPropertySubmission(submission);
   if (!result.success) return result;
 
-  // 2. Sync com GHL (async)
-  syncSubmissionToGHL({
-    ownerName: submission.owner_name,
-    ownerEmail: submission.owner_email,
-    ownerPhone: submission.owner_phone,
-    propertyType: submission.property_type,
-    neighborhood: submission.neighborhood,
-    city: submission.city,
-    priceEstimate: submission.price_estimate?.toString(),
-  }).catch(console.error);
+  // 2. Sync com GHL
+  try {
+    const ghlResult = await syncSubmissionToGHL({
+      ownerName: submission.owner_name,
+      ownerEmail: submission.owner_email,
+      ownerPhone: submission.owner_phone,
+      propertyType: submission.property_type,
+      neighborhood: submission.neighborhood,
+      city: submission.city,
+      priceEstimate: submission.price_estimate?.toString(),
+    });
+
+    if (ghlResult.success && ghlResult.contactId) {
+      const supabase = createServerClient();
+      const { data: recentSub } = await supabase
+        .from('property_submissions')
+        .select('id')
+        .eq('owner_phone', submission.owner_phone)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (recentSub) {
+        await supabase
+          .from('property_submissions')
+          .update({ ghl_contact_id: ghlResult.contactId })
+          .eq('id', recentSub.id);
+      }
+    }
+  } catch (e) {
+    console.error('GHL sync error:', e);
+  }
 
   return { success: true };
 }
