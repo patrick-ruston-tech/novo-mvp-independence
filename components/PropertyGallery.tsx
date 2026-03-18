@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import { X, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
 
-export default function PropertyGallery({ images }: { images: string[] }) {
+export default function PropertyGallery({ images, tags }: { images: string[]; tags?: React.ReactNode }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
@@ -52,10 +53,10 @@ export default function PropertyGallery({ images }: { images: string[] }) {
   return (
     <>
       {/* ===== GRID MODULAR ===== */}
-      <div className="rounded-xl overflow-hidden">
+      <div>
 
         {/* Mobile: imagem única */}
-        <div className="md:hidden relative aspect-[4/3]">
+        <div className="md:hidden relative aspect-[4/3] rounded-2xl overflow-hidden">
           {!loadedImages.has(0) && (
             <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" />
           )}
@@ -67,6 +68,7 @@ export default function PropertyGallery({ images }: { images: string[] }) {
             onLoad={() => handleImageLoad(0)}
             priority
           />
+          {tags}
           <button
             onClick={() => openFullscreen(0)}
             className="absolute bottom-3 right-3 bg-white/90 hover:bg-white text-black text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
@@ -77,11 +79,11 @@ export default function PropertyGallery({ images }: { images: string[] }) {
         </div>
 
         {/* Desktop: grid modular */}
-        <div className="hidden md:grid md:grid-cols-4 md:grid-rows-2 gap-1.5 h-[420px]">
+        <div className="hidden md:grid md:grid-cols-4 md:grid-rows-2 gap-2 h-[420px]">
 
           {/* Foto principal (2 colunas, 2 linhas) */}
           <div
-            className="col-span-2 row-span-2 relative cursor-pointer group"
+            className="col-span-2 row-span-2 relative cursor-pointer group rounded-2xl overflow-hidden"
             onClick={() => openFullscreen(0)}
           >
             {!loadedImages.has(0) && (
@@ -95,6 +97,7 @@ export default function PropertyGallery({ images }: { images: string[] }) {
               onLoad={() => handleImageLoad(0)}
               priority
             />
+            {tags}
           </div>
 
           {/* 4 fotos menores */}
@@ -105,7 +108,7 @@ export default function PropertyGallery({ images }: { images: string[] }) {
             return (
               <div
                 key={realIdx}
-                className="relative cursor-pointer group"
+                className="relative cursor-pointer group rounded-2xl overflow-hidden"
                 onClick={() => openFullscreen(realIdx)}
               >
                 {!loadedImages.has(realIdx) && (
