@@ -202,8 +202,8 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               Localização
             </h2>
             <PropertyMapWrapper
-              latitude={property.latitude}
-              longitude={property.longitude}
+              latitude={property.latitude ?? 0}
+              longitude={property.longitude ?? 0}
               address={`${property.address || ''}, ${property.neighborhood}, ${property.city}`}
             />
             {bairroInfo?.description && (
