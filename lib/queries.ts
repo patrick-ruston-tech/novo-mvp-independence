@@ -415,3 +415,71 @@ export async function getTopNeighborhoods(
 
   return (data as { name: string; slug: string; city: string; count: number }[]) ?? [];
 }
+
+// ============================================================
+// LAUNCH QUERIES
+// ============================================================
+
+export async function getLaunches(): Promise<any[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from('launches')
+    .select('*')
+    .eq('status', 'active')
+    .order('is_featured', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getLaunches error:', error);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function getLaunchBySlug(slug: string): Promise<any | null> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from('launches')
+    .select('*')
+    .eq('slug', slug)
+    .eq('status', 'active')
+    .single();
+
+  if (error) {
+    console.error('getLaunchBySlug error:', error);
+    return null;
+  }
+  return data;
+}
+
+export async function getLaunchProperties(launchId: string): Promise<any[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from('properties')
+    .select('*')
+    .eq('launch_id', launchId)
+    .eq('status', 'active')
+    .order('price_sale', { ascending: true });
+
+  if (error) {
+    console.error('getLaunchProperties error:', error);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function getFeaturedLaunches(limit = 4): Promise<any[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from('launches')
+    .select('*')
+    .eq('status', 'active')
+    .eq('is_featured', true)
+    .limit(limit);
+
+  if (error) {
+    console.error('getFeaturedLaunches error:', error);
+    return [];
+  }
+  return data ?? [];
+}

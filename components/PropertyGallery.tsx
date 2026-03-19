@@ -123,8 +123,8 @@ export default function PropertyGallery({ images, tags }: { images: string[]; ta
 
                 />
                 {isLast && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-colors group-hover:bg-black/50">
-                    <span className="text-white text-sm font-semibold">+{extraCount} fotos</span>
+                  <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center transition-all group-hover:bg-black/40 group-hover:backdrop-blur-md">
+                    <span className="text-white text-sm font-semibold bg-white/20 border border-white/30 px-4 py-2 rounded-lg backdrop-blur-sm">+{extraCount} fotos</span>
                   </div>
                 )}
               </div>

@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(sort find:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(curl -sL \"https://picsum.photos/seed/sjc1/1600/900\" -o hero-1.jpg)",
+      "Bash(curl -sL \"https://picsum.photos/seed/sjc2/1600/900\" -o hero-2.jpg)",
+      "Bash(curl -sL \"https://picsum.photos/seed/sjc3/1600/900\" -o hero-3.jpg)"
     ]
   }
 }

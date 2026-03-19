@@ -60,9 +60,24 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   const bairroInfo = await getNeighborhoodBySlug(property.neighborhood);
 
-  // Property type label for breadcrumb
+  const propertyTypeLabels: Record<string, string> = {
+    apartment: 'Apartamento',
+    house: 'Casa',
+    condo: 'Condomínio',
+    sobrado: 'Sobrado',
+    land: 'Terreno',
+    office: 'Sala Comercial',
+    commercial: 'Comercial',
+    flat: 'Flat',
+    kitnet: 'Kitnet',
+    farm: 'Chácara',
+    penthouse: 'Cobertura',
+    loft: 'Loft',
+    studio: 'Studio',
+  };
+
   const typeLabel = property.property_type
-    ? property.property_type.charAt(0).toUpperCase() + property.property_type.slice(1) + 's'
+    ? (propertyTypeLabels[property.property_type] || property.property_type)
     : 'Imóveis';
 
   return (
@@ -83,18 +98,18 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         <PropertyGallery images={images} tags={
           <div className="absolute top-4 left-4 flex gap-2 z-10">
             {property.featured && (
-              <span className="bg-brand-red text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg">
+              <span className="bg-[#EC5B13] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-[5px] flex items-center leading-none">
                 Destaque
               </span>
             )}
             {property.transaction_type === 'rent' && (
-              <span className="bg-black text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg">
+              <span className="bg-[#EC5B13] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-[5px] flex items-center leading-none">
                 Locação
               </span>
             )}
             {property.property_type && (
-              <span className="bg-white text-black border border-gray-200 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg">
-                {property.property_type}
+              <span className="bg-white text-[#EC5B13] text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-[5px] flex items-center leading-none">
+                {propertyTypeLabels[property.property_type] || property.property_type}
               </span>
             )}
           </div>
