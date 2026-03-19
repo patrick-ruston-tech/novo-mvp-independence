@@ -483,3 +483,22 @@ export async function getFeaturedLaunches(limit = 4): Promise<any[]> {
   }
   return data ?? [];
 }
+
+/**
+ * Busca imóveis marcados como "descobrir" (curadoria do admin)
+ */
+export async function getDiscoverProperties(): Promise<any[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from('properties')
+    .select('*')
+    .eq('status', 'active')
+    .eq('is_discover', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getDiscoverProperties error:', error);
+    return [];
+  }
+  return data ?? [];
+}
