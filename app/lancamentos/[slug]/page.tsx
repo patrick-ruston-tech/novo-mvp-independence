@@ -1,10 +1,13 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { getLaunchBySlug, getLaunchProperties } from '@/lib/queries';
-import PropertyCard from '@/components/PropertyCard';
+import { getLaunchBySlug, getLaunchProperties, getFeaturedLaunches } from '@/lib/queries';
 import ContactForm from '@/components/ContactForm';
 import PropertyMapWrapper from '@/components/PropertyMapWrapper';
-import { MapPin, Calendar, Building2, CheckCircle, ExternalLink } from 'lucide-react';
+import LaunchGallery from '@/components/LaunchGallery';
+import FloorPlans from '@/components/FloorPlans';
+import LaunchCard from '@/components/LaunchCard';
+import { Maximize, Bed, Bath, Car, MapPin, Play, Download } from 'lucide-react';
+import Image from 'next/image';
 
 export const revalidate = 3600;
 
@@ -28,185 +31,247 @@ export async function generateMetadata(
   const resolvedParams = await params;
   const launch = await getLaunchBySlug(resolvedParams.slug);
   if (!launch) return { title: 'Lançamento não encontrado' };
-
   return {
     title: `${launch.name} | Lançamentos | Independence`,
-    description: launch.description?.substring(0, 150) || `Conheça o ${launch.name} em ${launch.neighborhood}`,
+    description: launch.description?.substring(0, 150) || `Conheça o ${launch.name}`,
   };
 }
 
 export default async function LaunchDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const launch = await getLaunchBySlug(resolvedParams.slug);
-
   if (!launch) notFound();
 
-  const properties = await getLaunchProperties(launch.id);
+  const [properties, otherLaunches] = await Promise.all([
+    getLaunchProperties(launch.id),
+    getFeaturedLaunches(3),
+  ]);
+
   const progress = getProgress(launch.start_date, launch.delivery_date_actual);
-  const coverUrl = launch.cover_image || (launch.images && launch.images.length > 0 ? launch.images[0].url : null);
+  const images = launch.images && launch.images.length > 0
+    ? launch.images.map((img: any) => typeof img === 'string' ? img : img.url)
+    : [];
+
+  const filteredLaunches = otherLaunches.filter((l: any) => l.slug !== launch.slug);
 
   return (
-    <div className="w-full">
-      {/* Hero Banner */}
-      <div className="relative h-[400px] md:h-[500px] overflow-hidden">
-        {coverUrl ? (
-          <img src={coverUrl} alt={launch.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#1A2B3C] to-[#2d4a63]" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 lg:p-16 max-w-[1400px] mx-auto">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+
+      {/* Header: Title + Price */}
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-6">
+        <div>
           <span className="inline-block bg-[#EC5B13] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg mb-3">
-            {launch.construction_stage || 'Lançamento'}
+            {launch.construction_stage || 'Lançamento Exclusivo'}
           </span>
-          <h1 className="text-3xl md:text-5xl font-heading font-bold text-white mb-2">
+          <h1 className="text-3xl md:text-4xl font-heading font-bold text-black">
             {launch.name}
           </h1>
-          <p className="text-white/70 flex items-center gap-1.5">
-            <MapPin className="w-4 h-4" />
+          <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-1">
+            <MapPin className="w-3.5 h-3.5 text-[#EC5B13]" />
             {launch.address || `${launch.neighborhood}, ${launch.city}`}
           </p>
         </div>
+        {launch.price_from && (
+          <div className="mt-4 md:mt-0 text-right">
+            <div className="text-xs text-gray-400 uppercase tracking-wider">Valores de lançamento</div>
+            <div className="text-2xl md:text-3xl font-heading font-bold text-[#EC5B13]">
+              A partir de {formatPrice(launch.price_from)}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Content */}
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* Main */}
-          <div className="lg:col-span-8">
-            {/* Quick Info Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
-              {launch.price_from && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="text-xs text-gray-400 mb-1">A partir de</div>
-                  <div className="text-lg font-heading font-bold text-[#EC5B13]">{formatPrice(launch.price_from)}</div>
+      {/* ===== GALLERY ===== */}
+      {images.length > 0 && (
+        <div className="mb-10">
+          <LaunchGallery images={images} />
+        </div>
+      )}
+
+      {/* ===== FEATURES + FORM ROW ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+        {/* Left: Features + About */}
+        <div className="lg:col-span-7">
+
+          {/* Features box */}
+          <div className="bg-gray-50 rounded-2xl p-6 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+              {launch.total_units && (
+                <div className="text-center">
+                  <Maximize className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
+                  <div className="text-lg font-heading font-bold text-black">{launch.total_units}</div>
+                  <div className="text-[11px] text-gray-400 uppercase tracking-wider mt-0.5">Unidades</div>
                 </div>
               )}
-              {launch.total_units && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="text-xs text-gray-400 mb-1">Unidades</div>
-                  <div className="text-lg font-heading font-bold text-black">{launch.total_units}</div>
+              {launch.price_from && (
+                <div className="text-center">
+                  <Bed className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
+                  <div className="text-lg font-heading font-bold text-black">{formatPrice(launch.price_from)}</div>
+                  <div className="text-[11px] text-gray-400 uppercase tracking-wider mt-0.5">A partir de</div>
                 </div>
               )}
               {launch.delivery_date && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="text-xs text-gray-400 mb-1">Entrega</div>
+                <div className="text-center">
+                  <Car className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
                   <div className="text-lg font-heading font-bold text-black">{launch.delivery_date}</div>
+                  <div className="text-[11px] text-gray-400 uppercase tracking-wider mt-0.5">Entrega</div>
                 </div>
               )}
               {launch.builder && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="text-xs text-gray-400 mb-1">Construtora</div>
+                <div className="text-center">
+                  <Bath className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
                   <div className="text-lg font-heading font-bold text-black">{launch.builder}</div>
+                  <div className="text-[11px] text-gray-400 uppercase tracking-wider mt-0.5">Construtora</div>
                 </div>
               )}
             </div>
-
-            {/* Progress bar */}
-            {progress > 0 && (
-              <div className="mb-10 bg-gray-50 rounded-xl p-5">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-semibold text-black">Andamento da obra</span>
-                  <span className="text-sm font-bold text-[#EC5B13]">{progress}%</span>
-                </div>
-                <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#EC5B13] to-[#F59E0B] rounded-full transition-all duration-1000"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <div className="flex justify-between mt-2 text-xs text-gray-400">
-                  <span>Início: {launch.start_date ? new Date(launch.start_date).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : '-'}</span>
-                  <span>Entrega: {launch.delivery_date}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Description */}
-            {launch.description && (
-              <div className="mb-10">
-                <h2 className="text-lg font-heading font-bold text-black mb-4 flex items-center gap-2">
-                  <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
-                  Sobre o empreendimento
-                </h2>
-                <p className="text-gray-600 leading-relaxed whitespace-pre-line">{launch.description}</p>
-              </div>
-            )}
-
-            {/* Features */}
-            {launch.features && launch.features.length > 0 && (
-              <div className="mb-10">
-                <h2 className="text-lg font-heading font-bold text-black mb-4 flex items-center gap-2">
-                  <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
-                  Infraestrutura e lazer
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-3 gap-x-6">
-                  {launch.features.map((feat: string) => (
-                    <div key={feat} className="flex items-center gap-2.5 text-sm text-gray-600">
-                      <CheckCircle className="w-4 h-4 text-[#EC5B13] flex-shrink-0" />
-                      {feat}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Map */}
-            {(launch.latitude && launch.longitude) && (
-              <div className="mb-10">
-                <h2 className="text-lg font-heading font-bold text-black mb-4 flex items-center gap-2">
-                  <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
-                  Localização
-                </h2>
-                <PropertyMapWrapper
-                  latitude={launch.latitude ?? 0}
-                  longitude={launch.longitude ?? 0}
-                  address={launch.address || `${launch.neighborhood}, ${launch.city}`}
-                />
-              </div>
-            )}
-
-            {/* Official website */}
-            {launch.website && (
-              <a
-                href={launch.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-medium text-[#EC5B13] hover:underline mb-10"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Visitar site oficial do empreendimento
-              </a>
-            )}
-
-            {/* Units */}
-            {properties.length > 0 && (
-              <div>
-                <h2 className="text-lg font-heading font-bold text-black mb-4 flex items-center gap-2">
-                  <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
-                  Unidades disponíveis
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {properties.map((p) => (
-                    <PropertyCard key={p.id} property={p} />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-4">
-            <div className="sticky top-24">
-              <div className="rounded-2xl overflow-hidden shadow-sm bg-brand-red p-6">
-                <h2 className="font-heading font-bold text-xl text-white">Quer saber mais?</h2>
-                <p className="text-sm text-white/80 mt-1 mb-5">Receba condições exclusivas de lançamento.</p>
-                <ContactForm propertyId="" pageUrl={`/lancamentos/${launch.slug}`} variant="red" />
-              </div>
+          {/* About */}
+          {launch.description && (
+            <div className="mb-8">
+              <h2 className="text-xl font-heading font-bold text-black mb-4 flex items-center gap-2">
+                <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
+                Sobre o Empreendimento
+              </h2>
+              <p className="text-gray-600 leading-relaxed whitespace-pre-line">{launch.description}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Right: Contact Form */}
+        <div className="lg:col-span-5">
+          <div className="sticky top-24">
+            <div className="rounded-2xl overflow-hidden shadow-sm bg-brand-red p-6">
+              <h2 className="font-heading font-bold text-xl text-white">Interessado?</h2>
+              <p className="text-sm text-white/80 mt-1 mb-5">Preencha os dados e receba condições exclusivas de lançamento.</p>
+              <ContactForm propertyId="" pageUrl={`/lancamentos/${launch.slug}`} variant="red" />
             </div>
           </div>
         </div>
       </div>
+
+      {/* ===== TOUR VIRTUAL / VIDEO ===== */}
+      {launch.video_url && (
+        <div className="mb-12">
+          <h2 className="text-xl font-heading font-bold text-black mb-4 flex items-center gap-2">
+            <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
+            Tour Virtual
+          </h2>
+          <div className="aspect-video rounded-2xl overflow-hidden bg-black relative">
+            <iframe
+              src={launch.video_url}
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ===== DIFERENCIAIS: Pills ===== */}
+      {launch.features && launch.features.length > 0 && (
+        <div className="mb-12">
+          <h2 className="text-xl font-heading font-bold text-black mb-4 flex items-center gap-2">
+            <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
+            Diferenciais do Projeto
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {launch.features.map((feat: string) => (
+              <span
+                key={feat}
+                className="px-4 py-2 border border-gray-200 rounded-full text-sm text-gray-600 hover:border-[#EC5B13] hover:text-[#EC5B13] transition-colors"
+              >
+                {feat}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ===== PLANTAS ===== */}
+      {launch.floor_plans && launch.floor_plans.length > 0 && (
+        <div className="mb-12">
+          <h2 className="text-xl font-heading font-bold text-black mb-6 flex items-center gap-2">
+            <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
+            Plantas do Imóvel
+          </h2>
+          <FloorPlans plans={launch.floor_plans} />
+        </div>
+      )}
+
+      {/* ===== ESTÁGIO DA OBRA ===== */}
+      {progress > 0 && (
+        <div className="mb-12">
+          <h2 className="text-xl font-heading font-bold text-black mb-6 flex items-center gap-2">
+            <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
+            Estágio da Obra
+          </h2>
+          <div className="bg-gray-50 rounded-2xl p-6 md:p-8 space-y-5">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-black">Progresso geral</span>
+                <span className="text-sm font-bold text-[#EC5B13]">{progress}%</span>
+              </div>
+              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#EC5B13] to-[#F59E0B] rounded-full transition-all duration-1000"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+            <div className="flex justify-between text-xs text-gray-400 pt-2">
+              <span>Início: {launch.start_date ? new Date(launch.start_date).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : '-'}</span>
+              <span>Última atualização: {new Date().toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}</span>
+              <span>Entrega: {launch.delivery_date}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== LOCALIZAÇÃO ===== */}
+      <div className="mb-12">
+        <h2 className="text-xl font-heading font-bold text-black mb-4 flex items-center gap-2">
+          <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
+          Localização Privilegiada
+        </h2>
+        {launch.latitude && launch.longitude ? (
+          <div className="rounded-2xl overflow-hidden">
+            <PropertyMapWrapper
+              latitude={launch.latitude ?? 0}
+              longitude={launch.longitude ?? 0}
+              address={launch.address || `${launch.neighborhood}, ${launch.city}`}
+            />
+          </div>
+        ) : (
+          <div className="bg-gray-50 rounded-2xl h-72 flex flex-col items-center justify-center border border-gray-100">
+            <MapPin className="w-8 h-8 text-[#EC5B13] mb-2" />
+            <span className="text-sm font-medium text-gray-600">{launch.neighborhood}, {launch.city}</span>
+            <span className="text-xs text-gray-400 mt-1">Localização exata disponível sob consulta</span>
+          </div>
+        )}
+      </div>
+
+      {/* ===== OUTROS LANÇAMENTOS ===== */}
+      {filteredLaunches.length > 0 && (
+        <div className="mb-12 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-12 bg-gray-50">
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-heading font-bold text-black">Outros Lançamentos</h2>
+              <p className="text-sm text-gray-500 mt-1">Explore mais oportunidades exclusivas da Independence</p>
+            </div>
+            <a href="/lancamentos" className="text-sm font-semibold text-[#EC5B13] hover:underline flex items-center gap-1">
+              Ver todos →
+            </a>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {filteredLaunches.map((l: any) => (
+              <LaunchCard key={l.id} launch={l} />
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

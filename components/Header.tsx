@@ -50,7 +50,7 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center flex-shrink-0" onClick={closeMenu}>
-            <Image src="/logo.jpg" alt="Independence Negócios Imobiliários" width={140} height={48} className="h-10 w-auto" priority />
+            <Image src="/logo.png" alt="Independence Negócios Imobiliários" width={140} height={48} className="h-10 w-auto" priority />
           </Link>
 
           {/* Desktop Nav */}
@@ -115,7 +115,7 @@ export default function Header() {
                 <X size={24} />
               </button>
               <Link href="/" className="flex items-center" onClick={closeMenu}>
-                <Image src="/logo.jpg" alt="Independence" width={120} height={40} className="h-8 w-auto" />
+                <Image src="/logo.png" alt="Independence" width={120} height={40} className="h-8 w-auto" />
               </Link>
             </div>
 
