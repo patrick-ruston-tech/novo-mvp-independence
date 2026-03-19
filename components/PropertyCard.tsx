@@ -31,7 +31,7 @@ export default function PropertyCard({ property }: { property: PropertyCardType 
   const displayTitle = property.title || getDisplayTitle(property);
 
   return (
-    <Link href={`/imoveis/${property.slug}`} className="block group" prefetch={false}>
+    <Link href={`/imoveis/${property.slug}`} className="block group">
       <article className="bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow duration-200">
 
         {/* Imagem com skeleton shimmer */}

@@ -1,13 +1,15 @@
 import SearchBlock from '@/components/SearchBlock';
 import HeroCarousel from '@/components/HeroCarousel';
 import PropertyCard from '@/components/PropertyCard';
-import { getNeighborhoods, getFeaturedProperties, getHomeStats } from '@/lib/queries';
+import LaunchBannerCarousel from '@/components/LaunchBannerCarousel';
+import { getNeighborhoods, getFeaturedProperties, getHomeStats, getFeaturedLaunches } from '@/lib/queries';
 
 export default async function Home() {
-  const [neighborhoods, featured, stats] = await Promise.all([
+  const [neighborhoods, featured, stats, launches] = await Promise.all([
     getNeighborhoods('São José dos Campos'),
     getFeaturedProperties(8),
     getHomeStats(),
+    getFeaturedLaunches(3),
   ]);
 
   return (
@@ -33,7 +35,7 @@ export default async function Home() {
         </section>
       </div>
 
-      {/* Featured Properties Section - narrower */}
+      {/* Featured Properties Section */}
       {featured.length > 0 && (
         <section className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-16 md:py-20">
           <div className="mb-10">
@@ -49,55 +51,12 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Descobrir / Oportunidades Banner */}
-      <div className="px-4 sm:px-6 lg:px-[200px] pb-16 w-full">
-        <section className="relative overflow-hidden rounded-3xl min-h-[400px] flex items-center">
-          {/* Background image */}
-          <div className="absolute inset-0">
-            <img
-              src="/hero/hero-2.jpg"
-              alt="Oportunidades"
-              className="w-full h-full object-cover"
-            />
-            {/* Blue gradient overlay matching footer color */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#1A2B3C]/90 via-[#1A2B3C]/70 to-[#1A2B3C]/30" />
-          </div>
-
-          {/* Content */}
-          <div className="relative z-10 px-8 sm:px-12 lg:px-16 py-12 max-w-2xl">
-            <span className="inline-block bg-[#EC5B13] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg mb-6">
-              Oportunidades Únicas
-            </span>
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-white leading-tight mb-4">
-              Imóveis abaixo do<br />
-              preço de mercado.
-            </h2>
-            <p className="text-white/70 text-base mb-4 max-w-md">
-              Nossa curadoria selecionou propriedades com alto potencial de valorização ou preços reduzidos para fechamento rápido.
-            </p>
-            <ul className="space-y-2 mb-8">
-              <li className="flex items-center gap-2 text-sm text-white/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EC5B13]"></span>
-                Investimentos com retorno garantido
-              </li>
-              <li className="flex items-center gap-2 text-sm text-white/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EC5B13]"></span>
-                Documentação 100% regularizada
-              </li>
-              <li className="flex items-center gap-2 text-sm text-white/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EC5B13]"></span>
-                Assessoria para financiamento
-              </li>
-            </ul>
-            <a
-              href="/comprar"
-              className="inline-block bg-white hover:bg-gray-100 text-black font-semibold px-8 py-3.5 rounded-xl text-sm transition-colors"
-            >
-              Ver Oportunidades
-            </a>
-          </div>
-        </section>
-      </div>
+      {/* Lançamentos Banner Carousel */}
+      {launches.length > 0 && (
+        <div className="px-4 sm:px-6 lg:px-[200px] pb-16 w-full">
+          <LaunchBannerCarousel launches={launches} />
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,139 @@ interface SearchBlockProps {
   };
 }
 
+function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setPrecoMax }: {
+  mode: string;
+  tipo: string; setTipo: (v: string) => void;
+  quartos: string; setQuartos: (v: string) => void;
+  precoMax: string; setPrecoMax: (v: string) => void;
+}) {
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setOpenFilter(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const TYPES = [
+    { label: 'Apartamento', value: 'apartment' },
+    { label: 'Casa', value: 'house' },
+    { label: 'Sobrado', value: 'sobrado' },
+    { label: 'Terreno', value: 'land' },
+  ];
+
+  const BEDROOMS = ['1', '2', '3', '4+'];
+
+  const PRICES = mode === 'comprar'
+    ? [
+        { label: 'Até R$ 300mil', value: '300000' },
+        { label: 'Até R$ 500mil', value: '500000' },
+        { label: 'Até R$ 1M', value: '1000000' },
+        { label: 'Até R$ 2M', value: '2000000' },
+      ]
+    : [
+        { label: 'Até R$ 2.000', value: '2000' },
+        { label: 'Até R$ 3.500', value: '3500' },
+        { label: 'Até R$ 5.000', value: '5000' },
+        { label: 'Até R$ 10.000', value: '10000' },
+      ];
+
+  return (
+    <div className="flex gap-2 mt-3 relative" ref={filterRef}>
+      {/* Tipo */}
+      <div className="relative flex-1">
+        <button
+          onClick={() => setOpenFilter(openFilter === 'tipo' ? null : 'tipo')}
+          className={`w-full flex items-center justify-center gap-1 border rounded-lg py-2 text-xs transition-colors truncate whitespace-nowrap overflow-hidden ${
+            tipo ? 'border-brand-red text-brand-red font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+          }`}
+        >
+          {tipo ? TYPES.find(t => t.value === tipo)?.label?.substring(0, 8) : 'Tipo'} <ChevronDown className="w-3 h-3 flex-shrink-0" />
+        </button>
+        {openFilter === 'tipo' && (
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-1.5 z-50 min-w-[180px]">
+            <button onClick={() => { setTipo(''); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs rounded-lg ${!tipo ? 'bg-gray-100 font-medium' : 'hover:bg-gray-50'}`}>
+              Todos
+            </button>
+            {TYPES.map(t => (
+              <button key={t.value} onClick={() => { setTipo(t.value); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs rounded-lg ${tipo === t.value ? 'bg-gray-100 font-medium' : 'hover:bg-gray-50'}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Preço */}
+      <div className="relative flex-1">
+        <button
+          onClick={() => setOpenFilter(openFilter === 'preco' ? null : 'preco')}
+          className={`w-full flex items-center justify-center gap-1 border rounded-lg py-2 text-xs transition-colors truncate whitespace-nowrap overflow-hidden ${
+            precoMax ? 'border-brand-red text-brand-red font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+          }`}
+        >
+          {precoMax ? PRICES.find(p => p.value === precoMax)?.label : 'Preço'} <ChevronDown className="w-3 h-3 flex-shrink-0" />
+        </button>
+        {openFilter === 'preco' && (
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-1.5 z-50 min-w-[180px]">
+            <button onClick={() => { setPrecoMax(''); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs rounded-lg ${!precoMax ? 'bg-gray-100 font-medium' : 'hover:bg-gray-50'}`}>
+              Qualquer
+            </button>
+            {PRICES.map(p => (
+              <button key={p.value} onClick={() => { setPrecoMax(p.value); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs rounded-lg ${precoMax === p.value ? 'bg-gray-100 font-medium' : 'hover:bg-gray-50'}`}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Quartos */}
+      <div className="relative flex-1">
+        <button
+          onClick={() => setOpenFilter(openFilter === 'quartos' ? null : 'quartos')}
+          className={`w-full flex items-center justify-center gap-1 border rounded-lg py-2 text-xs transition-colors truncate whitespace-nowrap overflow-hidden ${
+            quartos ? 'border-brand-red text-brand-red font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+          }`}
+        >
+          {quartos ? `${quartos}q` : 'Quartos'} <ChevronDown className="w-3 h-3 flex-shrink-0" />
+        </button>
+        {openFilter === 'quartos' && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-2 z-50">
+            <div className="flex gap-1">
+              {BEDROOMS.map(q => (
+                <button key={q} onClick={() => { setQuartos(quartos === q ? '' : q); setOpenFilter(null); }} className={`flex-1 py-2 text-xs rounded-lg ${quartos === q ? 'bg-brand-red text-white' : 'hover:bg-gray-50 border border-gray-200'}`}>
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bairros */}
+      <div className="relative flex-1">
+        <button
+          onClick={() => setOpenFilter(openFilter === 'bairros' ? null : 'bairros')}
+          className="w-full flex items-center justify-center gap-1 border border-gray-200 text-gray-600 hover:border-gray-300 rounded-lg py-2 text-xs transition-colors truncate whitespace-nowrap overflow-hidden"
+        >
+          Bairros <ChevronDown className="w-3 h-3 flex-shrink-0" />
+        </button>
+        {openFilter === 'bairros' && (
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-2 z-50 min-w-[180px] text-xs text-gray-500 text-center py-3">
+            Use a busca acima para filtrar por bairro
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) {
   const router = useRouter();
   const [mode, setMode] = useState<'comprar' | 'alugar'>('comprar');
@@ -21,11 +154,15 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [filterTipo, setFilterTipo] = useState('');
+  const [filterQuartos, setFilterQuartos] = useState('');
+  const [filterPrecoMax, setFilterPrecoMax] = useState('');
+
   const filteredBairros = searchQuery.length > 0
     ? neighborhoods.filter((b) =>
         b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         b.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        searchQuery.toUpperCase().match(/^[A-Z]{2}\d+/) // busca por código tipo AP1234
+        searchQuery.toUpperCase().match(/^[A-Z]{2}\d+/)
       )
     : [...neighborhoods]
         .sort((a, b) => b.property_count - a.property_count)
@@ -42,10 +179,16 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
   }, []);
 
   const handleSearch = () => {
-    // Check if searching by property code
+    const params = new URLSearchParams();
+
+    if (filterTipo) params.set('tipo', filterTipo);
+    if (filterQuartos) params.set('quartos', filterQuartos);
+    if (filterPrecoMax) params.set('preco_max', filterPrecoMax);
+
     const codeMatch = searchQuery.toUpperCase().match(/^[A-Z]{2}\d+/);
     if (codeMatch) {
-      router.push(`/${mode}?codigo=${searchQuery.toUpperCase()}`);
+      params.set('codigo', searchQuery.toUpperCase());
+      router.push(`/${mode}?${params.toString()}`);
       return;
     }
 
@@ -54,9 +197,11 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
     );
 
     if (selectedBairro) {
-      router.push(`/${mode}/${selectedBairro.slug}`);
+      const query = params.toString();
+      router.push(`/${mode}/${selectedBairro.slug}${query ? `?${query}` : ''}`);
     } else {
-      router.push(`/${mode}`);
+      const query = params.toString();
+      router.push(`/${mode}${query ? `?${query}` : ''}`);
     }
   };
 
@@ -78,7 +223,7 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
         {/* Toggle Comprar/Alugar */}
         <div className="flex bg-gray-50 rounded-xl p-1 mb-4">
           <button
-            onClick={() => setMode('comprar')}
+            onClick={() => { setMode('comprar'); setFilterPrecoMax(''); }}
             className={`flex-1 py-2.5 text-sm rounded-lg transition-all ${
               mode === 'comprar'
                 ? 'bg-black text-white font-semibold shadow-sm'
@@ -88,7 +233,7 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
             Comprar
           </button>
           <button
-            onClick={() => setMode('alugar')}
+            onClick={() => { setMode('alugar'); setFilterPrecoMax(''); }}
             className={`flex-1 py-2.5 text-sm rounded-lg transition-all ${
               mode === 'alugar'
                 ? 'bg-black text-white font-semibold shadow-sm'
@@ -141,16 +286,12 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
         </div>
 
         {/* Quick filters */}
-        <div className="flex gap-2 mt-3">
-          {['Tipo', 'Preço', 'Quartos', 'Bairros'].map((filter) => (
-            <button
-              key={filter}
-              className="flex-1 flex items-center justify-center gap-1 border border-gray-200 rounded-lg py-2 text-xs text-gray-600 hover:border-gray-300 transition-colors"
-            >
-              {filter} <ChevronDown className="w-3 h-3" />
-            </button>
-          ))}
-        </div>
+        <QuickFilters
+          mode={mode}
+          tipo={filterTipo} setTipo={setFilterTipo}
+          quartos={filterQuartos} setQuartos={setFilterQuartos}
+          precoMax={filterPrecoMax} setPrecoMax={setFilterPrecoMax}
+        />
 
         {/* Botão Buscar */}
         <button
