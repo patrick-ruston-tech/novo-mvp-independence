@@ -1,10 +1,8 @@
-import Link from 'next/link';
-import { getProperties, getNeighborhoods, getTopNeighborhoods } from '@/lib/queries';
+import { getProperties, getNeighborhoods } from '@/lib/queries';
 import PropertyCard from '@/components/PropertyCard';
-import PropertyFilters from '@/components/PropertyFilters';
-import { PropertyFilters as PropertyFiltersType } from '@/types/property';
+import SidebarFilters from '@/components/SidebarFilters';
 import Pagination from '@/components/Pagination';
-
+import { PropertyFilters as PropertyFiltersType } from '@/types/property';
 
 export default async function AlugarPage({
   searchParams,
@@ -35,71 +33,74 @@ export default async function AlugarPage({
     city,
   };
 
-  const [propertiesResponse, neighborhoods, topNeighborhoods] = await Promise.all([
+  const [propertiesResponse, neighborhoods] = await Promise.all([
     getProperties(filters),
-    getNeighborhoods(city),
-    getTopNeighborhoods('rent', city, 4),
+    getNeighborhoods(),
   ]);
 
-  const { data: properties, total } = propertiesResponse;
+  const { data: properties, total, total_pages } = propertiesResponse;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-heading font-bold text-black">
-          Imóveis para alugar em {city || 'São José dos Campos e região'}
-        </h1>
-        <p className="text-sm text-gray-400 mt-4">
-          {total} imóveis encontrados
-        </p>
-      </div>
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+      <div className="flex gap-8">
 
-      {/* Bairros Cards */}
-      {topNeighborhoods.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-          {topNeighborhoods.map(bairro => (
-            <Link
-              key={bairro.slug}
-              href={`/alugar/${bairro.slug}`}
-              className="bg-brand-bg border border-gray-100 rounded-xl p-4 hover:border-gray-300 transition-colors group"
-            >
-              <h3 className="font-semibold text-black group-hover:text-brand-red transition-colors">{bairro.name}</h3>
-              <p className="text-xs text-gray-500 mt-1">{bairro.count} imóveis</p>
-            </Link>
-          ))}
-        </div>
-      )}
+        {/* Sidebar */}
+        <SidebarFilters transactionType="rent" neighborhoods={neighborhoods} />
 
-      {/* Filtros */}
-      <PropertyFilters />
-
-      {/* Grid */}
-      {properties.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {properties.map((property, idx) => (
-            <div
-              key={property.id}
-              className="animate-in fade-in slide-in-from-bottom-4 fill-mode-both"
-              style={{ animationDelay: `${(idx % 12) * 50}ms`, animationDuration: '500ms' }}
-            >
-              <PropertyCard property={property} />
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          {/* Header + Sort */}
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-heading font-bold text-black">
+                Imóveis para alugar
+              </h1>
+              <p className="text-sm text-gray-400 mt-1">
+                {total} resultados encontrados {city ? `em ${city}` : 'em São José dos Campos e região'}
+              </p>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-20 bg-gray-50 rounded-xl mt-6 border border-gray-100">
-          <p className="text-gray-500">Nenhum imóvel encontrado com os filtros atuais.</p>
-        </div>
-      )}
+            <div className="flex items-center gap-2 text-sm flex-shrink-0">
+              <span className="text-gray-500 hidden sm:inline">Ordenar por:</span>
+              <select
+                defaultValue={sort_by}
+                className="text-sm text-black font-medium bg-transparent outline-none cursor-pointer border border-gray-200 rounded-lg px-3 py-2"
+              >
+                <option value="newest">Mais recentes</option>
+                <option value="price_asc">Menor preço</option>
+                <option value="price_desc">Maior preço</option>
+                <option value="area_desc">Maior área</option>
+              </select>
+            </div>
+          </div>
 
-      {/* Paginação */}
-      <Pagination
-        currentPage={page}
-        totalPages={propertiesResponse.total_pages}
-        basePath="/alugar"
-      />
+          {/* Grid */}
+          {properties.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {properties.map((property, idx) => (
+                <div
+                  key={property.id}
+                  className="animate-in fade-in slide-in-from-bottom-4 fill-mode-both"
+                  style={{ animationDelay: `${(idx % 12) * 50}ms`, animationDuration: '500ms' }}
+                >
+                  <PropertyCard property={property} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20 bg-gray-50 rounded-2xl border border-gray-100">
+              <p className="text-gray-500">Nenhum imóvel encontrado com os filtros atuais.</p>
+              <p className="text-sm text-gray-400 mt-1">Tente ajustar os filtros para ver mais resultados.</p>
+            </div>
+          )}
+
+          {/* Paginação */}
+          <Pagination
+            currentPage={page}
+            totalPages={total_pages}
+            basePath="/alugar"
+          />
+        </div>
+      </div>
     </div>
   );
-
 }
