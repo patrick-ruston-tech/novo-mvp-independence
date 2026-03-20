@@ -135,6 +135,21 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         }),
       }}
     />
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://independenceimoveis.com.br' },
+            { '@type': 'ListItem', position: 2, name: property.transaction_type === 'rent' ? 'Alugar' : 'Comprar', item: `https://independenceimoveis.com.br/${property.transaction_type === 'rent' ? 'alugar' : 'comprar'}` },
+            { '@type': 'ListItem', position: 3, name: property.neighborhood, item: `https://independenceimoveis.com.br/comprar/${property.neighborhood?.toLowerCase().replace(/\s+/g, '-')}` },
+            { '@type': 'ListItem', position: 4, name: property.title?.substring(0, 60) },
+          ],
+        }),
+      }}
+    />
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-0 w-full">
 
       {/* Breadcrumb */}

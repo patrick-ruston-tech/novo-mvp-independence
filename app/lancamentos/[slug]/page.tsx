@@ -67,6 +67,21 @@ export default async function LaunchDetailPage({ params }: { params: Promise<{ s
   const filteredLaunches = otherLaunches.filter((l: any) => l.slug !== launch.slug);
 
   return (
+    <>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://independenceimoveis.com.br' },
+            { '@type': 'ListItem', position: 2, name: 'Lançamentos', item: 'https://independenceimoveis.com.br/lancamentos' },
+            { '@type': 'ListItem', position: 3, name: launch.name },
+          ],
+        }),
+      }}
+    />
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
 
       {/* Header: Title + Price */}
@@ -285,5 +300,6 @@ export default async function LaunchDetailPage({ params }: { params: Promise<{ s
       )}
 
     </div>
+    </>
   );
 }
