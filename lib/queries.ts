@@ -256,7 +256,7 @@ export async function getNeighborhoods(city?: string): Promise<Neighborhood[]> {
   const cached = unstable_cache(
     async () => {
       const supabase = createServerClient();
-      let query = supabase.from('neighborhoods').select('*').order('property_count', { ascending: false });
+      let query = supabase.from('neighborhoods').select('id, name, slug, city, property_count').order('property_count', { ascending: false });
       if (city) query = query.eq('city', city);
       const { data, error } = await query;
       if (error) {
@@ -282,7 +282,7 @@ export const getNeighborhoodBySlug = cache(async function getNeighborhoodBySlug(
 
   const { data, error } = await supabase
     .from('neighborhoods')
-    .select('*')
+    .select('id, name, slug, city, property_count')
     .eq('slug', slug)
     .single();
 
@@ -414,7 +414,7 @@ export async function getLaunches(): Promise<any[]> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from('launches')
-    .select('*')
+    .select('id, name, slug, neighborhood, city, description, price_from, price_to, delivery_date, construction_stage, total_units, cover_image, images, is_featured, status, start_date, delivery_date_actual')
     .eq('status', 'active')
     .order('is_featured', { ascending: false })
     .order('created_at', { ascending: false });
@@ -446,7 +446,7 @@ export async function getLaunchProperties(launchId: string): Promise<any[]> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from('properties')
-    .select('*')
+    .select(CARD_FIELDS)
     .eq('launch_id', launchId)
     .eq('status', 'active')
     .order('price_sale', { ascending: true });
