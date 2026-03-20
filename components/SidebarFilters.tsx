@@ -324,14 +324,14 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
         </div>
       </aside>
 
-      {/* Mobile Filter Button */}
-      <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+      {/* Mobile Filter Button - top bar */}
+      <div className="lg:hidden w-full mb-4">
         <button
           onClick={() => setMobileOpen(true)}
-          className="bg-brand-red text-white font-semibold px-6 py-3 rounded-full shadow-lg flex items-center gap-2 text-sm"
+          className="w-full bg-white border border-gray-200 text-black font-semibold px-4 py-3 rounded-xl flex items-center justify-center gap-2 text-sm hover:bg-gray-50 transition-colors"
         >
           <SlidersHorizontal className="w-4 h-4" />
-          Filtros {hasFilters ? '✓' : ''}
+          Filtros {hasFilters ? '· Filtros ativos' : ''}
         </button>
       </div>
 
