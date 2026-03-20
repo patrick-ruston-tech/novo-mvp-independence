@@ -4,8 +4,9 @@ import LaunchCard from '@/components/LaunchCard';
 import { Building2 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Lançamentos | Independence',
-  description: 'Conheça os melhores lançamentos imobiliários em São José dos Campos. Empreendimentos na planta com condições especiais.',
+  title: 'Lançamentos Imobiliários em São José dos Campos',
+  description: 'Conheça os melhores lançamentos imobiliários em São José dos Campos. Empreendimentos na planta com condições especiais de pagamento.',
+  alternates: { canonical: 'https://independenceimoveis.com.br/lancamentos' },
 };
 
 export const revalidate = 3600;

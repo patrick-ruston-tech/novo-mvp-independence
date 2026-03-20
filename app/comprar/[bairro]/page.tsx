@@ -1,9 +1,43 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
 import { getProperties, getNeighborhoodBySlug } from '@/lib/queries';
 import PropertyCard from '@/components/PropertyCard';
 import PropertyFilters from '@/components/PropertyFilters';
 import { PropertyFilters as PropertyFiltersType } from '@/types/property';
 import Pagination from '@/components/Pagination';
+
+export async function generateStaticParams() {
+  const { createServerClient } = await import('@/lib/supabase/server');
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from('neighborhoods')
+    .select('slug')
+    .gt('property_count', 2);
+
+  return (data ?? []).map((n) => ({ bairro: n.slug }));
+}
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ bairro: string }> }
+): Promise<Metadata> {
+  const resolvedParams = await params;
+  const { getNeighborhoodBySlug } = await import('@/lib/queries');
+  const neighborhood = await getNeighborhoodBySlug(resolvedParams.bairro);
+  const name = neighborhood?.name || resolvedParams.bairro.replace(/-/g, ' ');
+
+  return {
+    title: `Imóveis à Venda em ${name}, São José dos Campos`,
+    description: `Encontre casas, apartamentos e terrenos à venda em ${name}. Fotos, preços e condições de financiamento. Atendimento personalizado Independence Imóveis.`,
+    alternates: { canonical: `https://independenceimoveis.com.br/comprar/${resolvedParams.bairro}` },
+    openGraph: {
+      title: `Imóveis à Venda em ${name} | Independence`,
+      description: `Encontre imóveis à venda em ${name}, São José dos Campos.`,
+      type: 'website',
+    },
+  };
+}
+
+export const revalidate = 300;
 
 export default async function ComprarBairroPage({
   params,
@@ -53,6 +87,21 @@ export default async function ComprarBairroPage({
   }
 
   return (
+    <>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://independenceimoveis.com.br' },
+            { '@type': 'ListItem', position: 2, name: 'Comprar', item: 'https://independenceimoveis.com.br/comprar' },
+            { '@type': 'ListItem', position: 3, name: bairroInfo?.name || resolvedParams.bairro },
+          ],
+        }),
+      }}
+    />
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
       {/* Header */}
       <div className="mb-8">
@@ -103,5 +152,6 @@ export default async function ComprarBairroPage({
         basePath={`/comprar/${bairroSlug}`}
       />
     </div>
+    </>
   );
 }

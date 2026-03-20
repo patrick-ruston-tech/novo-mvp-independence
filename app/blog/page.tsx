@@ -6,8 +6,9 @@ import BlogCategoryFilter from '@/components/BlogCategoryFilter';
 import { ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Blog | Independence',
-  description: 'Dicas, análises de mercado e novidades sobre o mercado imobiliário de São José dos Campos.',
+  title: 'Blog | Dicas e Mercado Imobiliário de São José dos Campos',
+  description: 'Artigos sobre mercado imobiliário, dicas de decoração, investimentos e análises de bairros em São José dos Campos.',
+  alternates: { canonical: 'https://independenceimoveis.com.br/blog' },
 };
 
 export default async function BlogPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {

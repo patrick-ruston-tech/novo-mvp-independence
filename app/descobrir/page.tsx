@@ -5,8 +5,9 @@ import { Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Descobrir | Independence',
-  description: 'Oportunidades exclusivas selecionadas pela equipe Independence. Imóveis com alto potencial de valorização e preços abaixo do mercado.',
+  title: 'Oportunidades Exclusivas | Independence Imóveis',
+  description: 'Imóveis selecionados pela curadoria Independence com alto potencial de valorização e preços especiais em São José dos Campos.',
+  alternates: { canonical: 'https://independenceimoveis.com.br/descobrir' },
 };
 
 export const revalidate = 3600;

@@ -14,6 +14,13 @@ export async function generateMetadata(
   return {
     title: `${post.title} | Blog | Independence`,
     description: post.excerpt,
+    alternates: { canonical: `https://independenceimoveis.com.br/blog/${resolvedParams.slug}` },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      type: 'article',
+      images: [{ url: post.coverImage }],
+    },
   };
 }
 

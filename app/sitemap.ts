@@ -45,5 +45,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...launchPages, ...propertyPages];
+  // Neighborhoods (comprar + alugar)
+  const { data: neighborhoods } = await supabase
+    .from('neighborhoods')
+    .select('slug, property_count')
+    .gt('property_count', 2);
+
+  const neighborhoodPages = (neighborhoods ?? []).flatMap((n) => [
+    {
+      url: `${BASE_URL}/comprar/${n.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/alugar/${n.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    },
+  ]);
+
+  // Blog posts
+  const blogSlugs = [
+    'mercado-imobiliario-sjc-2024',
+    '5-dicas-decorar-apartamento',
+    'bairros-mais-valorizaram-sjc',
+    'vale-pena-investir-imoveis-planta',
+    'vantagens-morar-condominio-fechado',
+    'aluguel-ou-financiamento',
+  ];
+
+  const blogPages = blogSlugs.map((slug) => ({
+    url: `${BASE_URL}/blog/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.5,
+  }));
+
+  return [...staticPages, ...launchPages, ...neighborhoodPages, ...blogPages, ...propertyPages];
 }

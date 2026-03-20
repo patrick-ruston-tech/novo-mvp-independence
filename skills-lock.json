@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "c31ddd68ba5798a79a516c619b1e1fc4408cc4876ad600fefa4f5add4425719d"
     },
+    "programmatic-seo": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "computedHash": "c6384f24bb0203f8aa98b23b55d35b9e6721b94532a0e7965215c340ae96f1e0"
+    },
     "seo-audit": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
@@ -15,6 +20,11 @@
       "source": "supabase/agent-skills",
       "sourceType": "github",
       "computedHash": "e3ba3d760c5f4cc43b02a91fb8924f726c7818f95cc35d79d0a606ca622b72f5"
+    },
+    "vercel-composition-patterns": {
+      "source": "supabase/supabase",
+      "sourceType": "github",
+      "computedHash": "b47c2728f12d52a7e7b65149ed995dfca84fa69f2d71a992082380462fb13f30"
     },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
