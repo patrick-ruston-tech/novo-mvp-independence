@@ -96,8 +96,9 @@ export async function getProperties(
   }
 
   // Comodidades filter (via URL param string)
+  const VALID_AMENITIES = ['Piscina', 'Churrasqueira', 'Armários Planejados', 'Varanda', 'Elevador', 'Área Gourmet', 'Aquecimento', 'Salão de Festas', 'Quadra Esportiva', 'Dependência de Empregada'];
   const comodidadesList = typeof comodidades === 'string'
-    ? comodidades.split(',').filter(Boolean)
+    ? comodidades.split(',').filter((a: string) => VALID_AMENITIES.includes(a))
     : [];
 
   for (const amenity of comodidadesList) {
@@ -390,6 +391,9 @@ export async function getTopNeighborhoods(
   city?: string,
   limit = 4
 ): Promise<{ name: string; slug: string; city: string; count: number }[]> {
+  const validTransactionTypes = ['sale', 'rent'] as const;
+  if (!validTransactionTypes.includes(transactionType as any)) return [];
+
   const supabase = createServerClient();
 
   const { data, error } = await supabase.rpc('get_top_neighborhoods', {

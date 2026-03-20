@@ -76,7 +76,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
               sameAs: [
                 'https://www.instagram.com/independenceimoveis/',
               ],
-            }),
+            }).replace(/<\/script/gi, '<\\/script'),
           }}
         />
         <Header />

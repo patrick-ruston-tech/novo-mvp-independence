@@ -52,13 +52,22 @@ export default async function AlugarBairroPage({
   const bairroSlug = resolvedParams.bairro;
   const bairroInfo = await getNeighborhoodBySlug(bairroSlug);
 
-  const page = Number(resolvedSearch.pagina) || 1;
-  const sort_by = (resolvedSearch.ordem as PropertyFiltersType['sort_by']) || 'newest';
+  const VALID_SORT = ['newest', 'price_asc', 'price_desc', 'area_desc'];
+  function safePositiveInt(value: any, max = 100_000_000): number | undefined {
+    const num = Number(value);
+    if (isNaN(num) || num < 0 || num > max) return undefined;
+    return num;
+  }
+
+  const page = safePositiveInt(resolvedSearch.pagina, 10000) || 1;
+  const sort_by = VALID_SORT.includes(resolvedSearch.ordem as string)
+    ? (resolvedSearch.ordem as PropertyFiltersType['sort_by'])
+    : 'newest';
   const property_type = resolvedSearch.tipo as PropertyFiltersType['property_type'];
-  const bedrooms_min = Number(resolvedSearch.quartos) || undefined;
-  const price_min = Number(resolvedSearch.preco_min) || undefined;
-  const price_max = Number(resolvedSearch.preco_max) || undefined;
-  const garages_min = Number(resolvedSearch.garagens) || undefined;
+  const bedrooms_min = safePositiveInt(resolvedSearch.quartos, 20);
+  const price_min = safePositiveInt(resolvedSearch.preco_min);
+  const price_max = safePositiveInt(resolvedSearch.preco_max);
+  const garages_min = safePositiveInt(resolvedSearch.garagens, 20);
 
   const filters: PropertyFiltersType = {
     transaction_type: 'rent',

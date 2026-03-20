@@ -79,7 +79,7 @@ export default async function LaunchDetailPage({ params }: { params: Promise<{ s
             { '@type': 'ListItem', position: 2, name: 'Lançamentos', item: 'https://independenceimoveis.com.br/lancamentos' },
             { '@type': 'ListItem', position: 3, name: launch.name },
           ],
-        }),
+        }).replace(/<\/script/gi, '<\\/script'),
       }}
     />
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
@@ -179,7 +179,16 @@ export default async function LaunchDetailPage({ params }: { params: Promise<{ s
       </div>
 
       {/* ===== TOUR VIRTUAL / VIDEO ===== */}
-      {launch.video_url && (
+      {launch.video_url && (() => {
+        const isValidVideoUrl = (url: string): boolean => {
+          const allowed = ['youtube.com', 'youtu.be', 'vimeo.com'];
+          try {
+            const parsed = new URL(url);
+            return allowed.some(d => parsed.hostname.includes(d));
+          } catch { return false; }
+        };
+        return isValidVideoUrl(launch.video_url);
+      })() && (
         <div className="mb-12">
           <h2 className="text-xl font-heading font-bold text-black mb-4 flex items-center gap-2">
             <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
@@ -191,6 +200,7 @@ export default async function LaunchDetailPage({ params }: { params: Promise<{ s
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+              sandbox="allow-scripts allow-same-origin allow-presentation"
             />
           </div>
         </div>

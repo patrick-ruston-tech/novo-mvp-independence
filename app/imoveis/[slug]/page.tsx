@@ -151,7 +151,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             priceCurrency: 'BRL',
             availability: 'https://schema.org/InStock',
           },
-        }),
+        }).replace(/<\/script/gi, '<\\/script'),
       }}
     />
     <script
@@ -166,7 +166,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             { '@type': 'ListItem', position: 3, name: property.neighborhood, item: `https://independenceimoveis.com.br/comprar/${property.neighborhood?.toLowerCase().replace(/\s+/g, '-')}` },
             { '@type': 'ListItem', position: 4, name: property.title?.substring(0, 60) },
           ],
-        }),
+        }).replace(/<\/script/gi, '<\\/script'),
       }}
     />
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-0 w-full">

@@ -106,13 +106,22 @@ export default async function ComprarPage({
 }) {
   const resolvedParams = await searchParams;
 
-  const page = Number(resolvedParams.pagina) || 1;
-  const sort_by = (resolvedParams.ordem as PropertyFiltersType['sort_by']) || 'newest';
+  function safePositiveInt(value: any, max = 100_000_000): number | undefined {
+    const num = Number(value);
+    if (isNaN(num) || num < 0 || num > max) return undefined;
+    return num;
+  }
+
+  const VALID_SORT = ['newest', 'price_asc', 'price_desc', 'area_desc'];
+  const page = safePositiveInt(resolvedParams.pagina, 10000) || 1;
+  const sort_by = VALID_SORT.includes(resolvedParams.ordem as string)
+    ? (resolvedParams.ordem as PropertyFiltersType['sort_by'])
+    : 'newest';
   const property_type = resolvedParams.tipo as PropertyFiltersType['property_type'];
-  const bedrooms_min = Number(resolvedParams.quartos) || undefined;
-  const price_min = Number(resolvedParams.preco_min) || undefined;
-  const price_max = Number(resolvedParams.preco_max) || undefined;
-  const garages_min = Number(resolvedParams.garagens) || undefined;
+  const bedrooms_min = safePositiveInt(resolvedParams.quartos, 20);
+  const price_min = safePositiveInt(resolvedParams.preco_min);
+  const price_max = safePositiveInt(resolvedParams.preco_max);
+  const garages_min = safePositiveInt(resolvedParams.garagens, 20);
   const city = resolvedParams.cidade as string | undefined;
   const comodidades = resolvedParams.comodidades as string | undefined;
 
