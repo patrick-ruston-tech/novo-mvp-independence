@@ -41,6 +41,7 @@ export async function getProperties(
     price_max,
     garages_min,
     features,
+    comodidades,
     city,
     sort_by = 'newest',
     page = 1,
@@ -91,6 +92,15 @@ export async function getProperties(
   // Filtro por features (ex: Piscina, Churrasqueira)
   if (features && features.length > 0) {
     query = query.contains('features', features);
+  }
+
+  // Comodidades filter (via URL param string)
+  const comodidadesList = typeof comodidades === 'string'
+    ? comodidades.split(',').filter(Boolean)
+    : [];
+
+  for (const amenity of comodidadesList) {
+    query = query.contains('features', [amenity]);
   }
 
   // Ordenação

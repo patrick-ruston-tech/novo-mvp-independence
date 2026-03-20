@@ -24,7 +24,7 @@ const BEDROOMS = ['1', '2', '3', '4+'];
 const SUITES = ['1', '2', '3+'];
 const GARAGES = ['1', '2', '3', '4+'];
 
-const AMENITIES = ['Piscina', 'Academia', 'Varanda Gourmet', 'Portaria 24h', 'Churrasqueira', 'Elevador'];
+const AMENITIES = ['Piscina', 'Churrasqueira', 'Armários Planejados', 'Varanda', 'Elevador', 'Área Gourmet'];
 
 interface SidebarFiltersProps {
   transactionType: 'sale' | 'rent';
@@ -43,7 +43,9 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
   const [selectedGarages, setSelectedGarages] = useState(searchParams.get('garagens') || '');
   const [priceMin, setPriceMin] = useState(Number(searchParams.get('preco_min')) || 0);
   const [priceMax, setPriceMax] = useState(Number(searchParams.get('preco_max')) || (transactionType === 'sale' ? 5000000 : 15000));
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>(
+    searchParams.get('comodidades')?.split(',').filter(Boolean) || []
+  );
   const [selectedNeighborhood, setSelectedNeighborhood] = useState(searchParams.get('bairro') || '');
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -67,6 +69,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
     if (priceMin > 0) params.set('preco_min', String(priceMin));
     if (priceMax < maxPrice) params.set('preco_max', String(priceMax));
     if (selectedNeighborhood) params.set('bairro', selectedNeighborhood);
+    if (selectedAmenities.length > 0) params.set('comodidades', selectedAmenities.join(','));
 
     params.delete('pagina');
     const query = params.toString();
@@ -88,7 +91,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
     setMobileOpen(false);
   }
 
-  const hasFilters = selectedCity || selectedType || selectedBedrooms || selectedSuites || selectedGarages || priceMin > 0 || priceMax < maxPrice || selectedNeighborhood;
+  const hasFilters = selectedCity || selectedType || selectedBedrooms || selectedSuites || selectedGarages || priceMin > 0 || priceMax < maxPrice || selectedNeighborhood || selectedAmenities.length > 0;
 
   const togglePill = (value: string, current: string, setter: (v: string) => void) => {
     setter(current === value ? '' : value);

@@ -168,6 +168,7 @@ export interface PropertyFilters {
   garages_min?: number;
   features?: string[];
   city?: string;
+  comodidades?: string;
   sort_by?: 'price_asc' | 'price_desc' | 'newest' | 'area_desc';
   page?: number;
   per_page?: number;

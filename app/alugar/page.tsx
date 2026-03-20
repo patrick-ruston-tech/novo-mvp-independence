@@ -19,6 +19,7 @@ export default async function AlugarPage({
   const price_max = Number(resolvedParams.preco_max) || undefined;
   const garages_min = Number(resolvedParams.garagens) || undefined;
   const city = resolvedParams.cidade as string | undefined;
+  const comodidades = resolvedParams.comodidades as string | undefined;
 
   const filters: PropertyFiltersType = {
     transaction_type: 'rent',
@@ -31,6 +32,7 @@ export default async function AlugarPage({
     price_max,
     garages_min,
     city,
+    comodidades,
   };
 
   const [propertiesResponse, neighborhoods] = await Promise.all([

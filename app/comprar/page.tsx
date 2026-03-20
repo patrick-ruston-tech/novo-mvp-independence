@@ -19,6 +19,7 @@ export default async function ComprarPage({
   const price_max = Number(resolvedParams.preco_max) || undefined;
   const garages_min = Number(resolvedParams.garagens) || undefined;
   const city = resolvedParams.cidade as string | undefined;
+  const comodidades = resolvedParams.comodidades as string | undefined;
 
   const filters: PropertyFiltersType = {
     transaction_type: 'sale',
@@ -31,6 +32,7 @@ export default async function ComprarPage({
     price_max,
     garages_min,
     city,
+    comodidades,
   };
 
   const [propertiesResponse, neighborhoods] = await Promise.all([
