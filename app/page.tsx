@@ -2,6 +2,7 @@ import SearchBlock from '@/components/SearchBlock';
 import HeroCarousel from '@/components/HeroCarousel';
 import PropertyCard from '@/components/PropertyCard';
 import LaunchBannerCarousel from '@/components/LaunchBannerCarousel';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { getNeighborhoods, getFeaturedProperties, getHomeStats, getFeaturedLaunches, getDiscoverProperties } from '@/lib/queries';
@@ -31,6 +32,7 @@ export default async function Home() {
           <HeroCarousel />
           <div className="relative z-10 w-full max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16 py-12 flex flex-col lg:flex-row items-center lg:items-start gap-10">
             <div className="flex-1 text-center lg:text-left lg:pt-12">
+              <Image src="/logo.png" alt="Independence" width={160} height={54} className="h-12 w-auto brightness-0 invert mb-6" />
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold text-white leading-tight">
                 Bom mesmo<br />
                 é viver em São José!
