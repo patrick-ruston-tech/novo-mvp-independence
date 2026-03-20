@@ -55,16 +55,6 @@ export default function Footer() {
                   Anunciar meu Imóvel
                 </Link>
               </li>
-              <li>
-                <Link href="/sobre" className="text-sm text-gray-400 hover:text-white transition-colors">
-                  Trabalhe Conosco
-                </Link>
-              </li>
-              <li>
-                <Link href="/politica-de-privacidade" className="text-sm text-gray-400 hover:text-white transition-colors">
-                  Política de Privacidade
-                </Link>
-              </li>
             </ul>
           </div>
 
