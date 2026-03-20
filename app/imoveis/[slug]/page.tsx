@@ -102,35 +102,54 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           '@context': 'https://schema.org',
           '@type': 'RealEstateListing',
           name: property.title,
-          description: property.description?.substring(0, 200),
           url: `https://independenceimoveis.com.br/imoveis/${property.slug}`,
-          image: property.images?.[0]?.url || property.images?.[0],
           datePosted: property.listed_at || property.created_at,
+          dateModified: property.updated_at || property.created_at,
+          image: property.images?.slice(0, 5).map((img: any) => typeof img === 'string' ? img : img.url) || [],
+          broker: {
+            '@type': 'RealEstateAgent',
+            name: 'Independence Negócios Imobiliários',
+            url: 'https://independenceimoveis.com.br',
+            telephone: '+55-12-3203-6500',
+          },
+          about: {
+            '@type': property.property_type === 'apartment' || property.property_type === 'condo' || property.property_type === 'penthouse' || property.property_type === 'studio'
+              ? 'Apartment'
+              : property.property_type === 'house' || property.property_type === 'sobrado'
+              ? 'House'
+              : property.property_type === 'land'
+              ? 'Product'
+              : 'Residence',
+            name: property.title,
+            description: property.description?.substring(0, 200),
+            image: property.images?.[0]?.url || property.images?.[0],
+            numberOfRooms: property.bedrooms || undefined,
+            numberOfBathroomsTotal: property.bathrooms || undefined,
+            floorSize: (property.living_area || property.lot_area) ? {
+              '@type': 'QuantitativeValue',
+              value: property.living_area || property.lot_area,
+              unitCode: 'MTK',
+            } : undefined,
+            address: {
+              '@type': 'PostalAddress',
+              streetAddress: property.address || '',
+              addressLocality: property.city,
+              addressRegion: property.state || 'SP',
+              addressCountry: 'BR',
+            },
+            ...(property.latitude && property.longitude ? {
+              geo: {
+                '@type': 'GeoCoordinates',
+                latitude: property.latitude,
+                longitude: property.longitude,
+              },
+            } : {}),
+          },
           offers: {
             '@type': 'Offer',
             price: property.price_sale || property.price_rent || 0,
             priceCurrency: 'BRL',
             availability: 'https://schema.org/InStock',
-          },
-          address: {
-            '@type': 'PostalAddress',
-            streetAddress: property.address || '',
-            addressLocality: property.city,
-            addressRegion: property.state || 'SP',
-            addressCountry: 'BR',
-          },
-          ...(property.latitude && property.longitude ? {
-            geo: {
-              '@type': 'GeoCoordinates',
-              latitude: property.latitude,
-              longitude: property.longitude,
-            },
-          } : {}),
-          numberOfRooms: property.bedrooms || undefined,
-          floorSize: {
-            '@type': 'QuantitativeValue',
-            value: property.living_area || property.lot_area || 0,
-            unitCode: 'MTK',
           },
         }),
       }}
