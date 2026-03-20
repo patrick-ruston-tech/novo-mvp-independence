@@ -48,7 +48,7 @@ export default function PropertyCard({ property }: { property: PropertyCardType 
             src={images[currentImageIdx].url}
             alt={displayTitle}
             fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             className={`object-cover transition-[opacity,transform] duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
             onLoad={() => setImageLoaded(true)}

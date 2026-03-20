@@ -67,6 +67,7 @@ export default function PropertyGallery({ images, tags }: { images: string[]; ta
             className={`object-cover transition-opacity duration-300 ${loadedImages.has(0) ? 'opacity-100' : 'opacity-0'}`}
             onLoad={() => handleImageLoad(0)}
             priority
+            sizes="(max-width: 768px) 100vw, 60vw"
           />
           {tags}
           <button
