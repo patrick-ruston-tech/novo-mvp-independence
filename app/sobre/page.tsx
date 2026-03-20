@@ -13,7 +13,7 @@ export default function SobrePage() {
     <div className="w-full">
 
       {/* ===== HERO ===== */}
-      <div className="px-4 sm:px-6 lg:px-[200px] pt-8 w-full">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full">
         <section className="relative h-[500px] md:h-[600px] w-full flex items-center overflow-hidden rounded-3xl">
           <div className="absolute inset-0">
             <Image src="/hero/hero-1.jpg" alt="Independence Imóveis" fill className="object-cover" unoptimized priority />
@@ -198,7 +198,7 @@ export default function SobrePage() {
       </section>
 
       {/* ===== CTA FINAL ===== */}
-      <div className="px-4 sm:px-6 lg:px-[200px] py-12 w-full">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
         <section className="bg-brand-red rounded-3xl p-10 md:p-16 text-center">
           <h2 className="font-heading font-extrabold text-3xl md:text-5xl text-white leading-tight mb-6">
             Pronto para conquistar<br />sua independência?

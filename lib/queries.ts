@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { createServerClient } from '@/lib/supabase/server';
 import type {
   Property,
@@ -160,27 +161,25 @@ export async function getPropertyBySlug(
  * Busca imóveis em destaque para a home.
  * Prioriza SUPER_PREMIUM > PREMIUM > STANDARD.
  */
-export async function getFeaturedProperties(
-  limit = 8
-): Promise<PropertyCard[]> {
-  const supabase = createServerClient();
+export const getFeaturedProperties = unstable_cache(
+  async (limit = 8) => {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('status', 'active')
+      .eq('featured', true)
+      .limit(limit);
 
-  const { data, error } = await supabase
-    .from('properties')
-    .select(CARD_FIELDS)
-    .eq('status', 'active')
-    .eq('featured', true)
-    .order('publication_type', { ascending: false }) // SUPER_PREMIUM first
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error('getFeaturedProperties error:', error);
-    return [];
-  }
-
-  return (data as PropertyCard[]) ?? [];
-}
+    if (error) {
+      console.error('getFeaturedProperties error:', error);
+      return [];
+    }
+    return data ?? [];
+  },
+  ['featured-properties'],
+  { revalidate: 300 } // cache por 5 minutos
+);
 
 /**
  * Busca imóveis similares (mesmo bairro e tipo de transação).
@@ -242,29 +241,23 @@ export async function getAllPropertySlugs(): Promise<string[]> {
  * Lista todos os bairros com imóveis ativos.
  * Usado no combobox de busca da home e nos filtros.
  */
-export async function getNeighborhoods(
-  city?: string
-): Promise<Neighborhood[]> {
-  const supabase = createServerClient();
-
-  let query = supabase
-    .from('neighborhoods')
-    .select('*')
-    .gt('property_count', 0)
-    .order('name', { ascending: true });
-
-  if (city) {
-    query = query.eq('city', city);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('getNeighborhoods error:', error);
-    return [];
-  }
-
-  return (data as Neighborhood[]) ?? [];
+export async function getNeighborhoods(city?: string): Promise<Neighborhood[]> {
+  const cached = unstable_cache(
+    async () => {
+      const supabase = createServerClient();
+      let query = supabase.from('neighborhoods').select('*').order('property_count', { ascending: false });
+      if (city) query = query.eq('city', city);
+      const { data, error } = await query;
+      if (error) {
+        console.error('getNeighborhoods error:', error);
+        return [];
+      }
+      return data ?? [];
+    },
+    ['neighborhoods', city || 'all'],
+    { revalidate: 600 }
+  );
+  return cached() as Promise<Neighborhood[]>;
 }
 
 /**
@@ -359,37 +352,23 @@ export async function createPropertySubmission(
 /**
  * Retorna contagens rápidas para a home page.
  */
-export async function getHomeStats(): Promise<{
-  total_sale: number;
-  total_rent: number;
-  total_neighborhoods: number;
-}> {
-  const supabase = createServerClient();
-
-  const [saleRes, rentRes, neighRes] = await Promise.all([
-    supabase
-      .from('properties')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-      .in('transaction_type', ['sale', 'sale_rent']),
-    supabase
-      .from('properties')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-      .in('transaction_type', ['rent', 'sale_rent']),
-    supabase
-      .from('neighborhoods')
-      .select('id', { count: 'exact', head: true })
-      .gt('property_count', 0),
-  ]);
-
-  return {
-    total_sale: saleRes.count ?? 0,
-    total_rent: rentRes.count ?? 0,
-    total_neighborhoods: neighRes.count ?? 0,
-  };
-
-}
+export const getHomeStats = unstable_cache(
+  async () => {
+    const supabase = createServerClient();
+    const [saleRes, rentRes, neighRes] = await Promise.all([
+      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('status', 'active').in('transaction_type', ['sale', 'sale_rent']),
+      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('status', 'active').in('transaction_type', ['rent', 'sale_rent']),
+      supabase.from('neighborhoods').select('*', { count: 'exact', head: true }),
+    ]);
+    return {
+      total_sale: saleRes.count ?? 0,
+      total_rent: rentRes.count ?? 0,
+      total_neighborhoods: neighRes.count ?? 0,
+    };
+  },
+  ['home-stats'],
+  { revalidate: 600 } // cache por 10 minutos
+);
 
 /**
  * Top bairros com mais imóveis por tipo de transação.
@@ -468,21 +447,24 @@ export async function getLaunchProperties(launchId: string): Promise<any[]> {
   return data ?? [];
 }
 
-export async function getFeaturedLaunches(limit = 4): Promise<any[]> {
-  const supabase = createServerClient();
-  const { data, error } = await supabase
-    .from('launches')
-    .select('*')
-    .eq('status', 'active')
-    .eq('is_featured', true)
-    .limit(limit);
-
-  if (error) {
-    console.error('getFeaturedLaunches error:', error);
-    return [];
-  }
-  return data ?? [];
-}
+export const getFeaturedLaunches = unstable_cache(
+  async (limit = 4) => {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from('launches')
+      .select('*')
+      .eq('status', 'active')
+      .eq('is_featured', true)
+      .limit(limit);
+    if (error) {
+      console.error('getFeaturedLaunches error:', error);
+      return [];
+    }
+    return data ?? [];
+  },
+  ['featured-launches'],
+  { revalidate: 300 }
+);
 
 /**
  * Busca imóveis marcados como "descobrir" (curadoria do admin)
