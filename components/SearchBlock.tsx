@@ -14,11 +14,13 @@ interface SearchBlockProps {
   };
 }
 
-function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setPrecoMax }: {
+function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setPrecoMax, bairro, setBairro, neighborhoods }: {
   mode: string;
   tipo: string; setTipo: (v: string) => void;
   quartos: string; setQuartos: (v: string) => void;
   precoMax: string; setPrecoMax: (v: string) => void;
+  bairro: string; setBairro: (v: string) => void;
+  neighborhoods: { name: string; slug: string }[];
 }) {
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -120,10 +122,10 @@ function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setP
           {quartos ? `${quartos}q` : 'Quartos'} <ChevronDown className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
         </button>
         {openFilter === 'quartos' && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-2 z-50">
-            <div className="flex gap-1">
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-3 z-50 min-w-[200px]">
+            <div className="grid grid-cols-4 gap-2">
               {BEDROOMS.map(q => (
-                <button key={q} onClick={() => { setQuartos(quartos === q ? '' : q); setOpenFilter(null); }} className={`flex-1 py-2 text-xs rounded-lg ${quartos === q ? 'bg-brand-red text-white' : 'hover:bg-gray-50 border border-gray-200'}`}>
+                <button key={q} onClick={() => { setQuartos(quartos === q ? '' : q); setOpenFilter(null); }} className={`py-2.5 text-sm font-medium rounded-lg text-center ${quartos === q ? 'bg-brand-red text-white' : 'hover:bg-gray-50 border border-gray-200'}`}>
                   {q}
                 </button>
               ))}
@@ -137,13 +139,22 @@ function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setP
         <button
           onClick={() => setOpenFilter(openFilter === 'bairros' ? null : 'bairros')}
           aria-expanded={openFilter === 'bairros'}
-          className="w-full flex items-center justify-center gap-1 border border-gray-200 text-gray-600 hover:border-gray-300 rounded-lg py-2 text-xs transition-colors truncate whitespace-nowrap overflow-hidden"
+          className={`w-full flex items-center justify-center gap-1 border rounded-lg py-2 text-xs transition-colors truncate whitespace-nowrap overflow-hidden ${
+            bairro ? 'border-brand-red text-brand-red font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+          }`}
         >
-          Bairros <ChevronDown className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+          {bairro ? bairro.substring(0, 10) : 'Bairros'} <ChevronDown className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
         </button>
         {openFilter === 'bairros' && (
-          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-2 z-50 min-w-[180px] text-xs text-gray-500 text-center py-3">
-            Use a busca acima para filtrar por bairro
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-1.5 z-50 min-w-[200px] max-h-[200px] overflow-y-auto">
+            <button onClick={() => { setBairro(''); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs rounded-lg ${!bairro ? 'bg-gray-100 font-medium' : 'hover:bg-gray-50'}`}>
+              Todos
+            </button>
+            {neighborhoods.slice(0, 15).map(b => (
+              <button key={b.slug} onClick={() => { setBairro(b.name); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs rounded-lg truncate ${bairro === b.name ? 'bg-gray-100 font-medium' : 'hover:bg-gray-50'}`}>
+                {b.name}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -161,6 +172,7 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
   const [filterTipo, setFilterTipo] = useState('');
   const [filterQuartos, setFilterQuartos] = useState('');
   const [filterPrecoMax, setFilterPrecoMax] = useState('');
+  const [filterBairro, setFilterBairro] = useState('');
 
   const filteredBairros = searchQuery.length > 0
     ? neighborhoods.filter((b) =>
@@ -194,6 +206,18 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
       params.set('codigo', searchQuery.toUpperCase());
       router.push(`/${mode}?${params.toString()}`);
       return;
+    }
+
+    // Bairro selected via QuickFilter dropdown
+    if (filterBairro) {
+      const selectedNeighborhood = neighborhoods.find(
+        (b) => b.name === filterBairro
+      );
+      if (selectedNeighborhood) {
+        const query = params.toString();
+        router.push(`/${mode}/${selectedNeighborhood.slug}${query ? `?${query}` : ''}`);
+        return;
+      }
     }
 
     const selectedBairro = neighborhoods.find(
@@ -298,6 +322,8 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
           tipo={filterTipo} setTipo={setFilterTipo}
           quartos={filterQuartos} setQuartos={setFilterQuartos}
           precoMax={filterPrecoMax} setPrecoMax={setFilterPrecoMax}
+          bairro={filterBairro} setBairro={setFilterBairro}
+          neighborhoods={neighborhoods}
         />
 
         {/* Botão Buscar */}
