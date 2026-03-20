@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 import { createServerClient } from '@/lib/supabase/server';
 import type {
@@ -147,7 +148,7 @@ export async function getProperties(
  * Busca imóvel completo pelo slug.
  * Usado na página /imoveis/[slug].
  */
-export async function getPropertyBySlug(
+export const getPropertyBySlug = cache(async function getPropertyBySlug(
   slug: string
 ): Promise<Property | null> {
   const supabase = createServerClient();
@@ -165,7 +166,7 @@ export async function getPropertyBySlug(
   }
 
   return data as Property;
-}
+});
 
 /**
  * Busca imóveis em destaque para a home.
@@ -176,7 +177,7 @@ export const getFeaturedProperties = unstable_cache(
     const supabase = createServerClient();
     const { data, error } = await supabase
       .from('properties')
-      .select('*')
+      .select(CARD_FIELDS)
       .eq('status', 'active')
       .eq('featured', true)
       .limit(limit);
@@ -274,7 +275,7 @@ export async function getNeighborhoods(city?: string): Promise<Neighborhood[]> {
  * Busca bairro pelo slug.
  * Usado para texto SEO nas páginas de listagem por bairro.
  */
-export async function getNeighborhoodBySlug(
+export const getNeighborhoodBySlug = cache(async function getNeighborhoodBySlug(
   slug: string
 ): Promise<Neighborhood | null> {
   const supabase = createServerClient();
@@ -291,7 +292,7 @@ export async function getNeighborhoodBySlug(
   }
 
   return data as Neighborhood;
-}
+});
 
 // ============================================================
 // LEAD / SUBMISSION MUTATIONS
@@ -425,7 +426,7 @@ export async function getLaunches(): Promise<any[]> {
   return data ?? [];
 }
 
-export async function getLaunchBySlug(slug: string): Promise<any | null> {
+export const getLaunchBySlug = cache(async function getLaunchBySlug(slug: string): Promise<any | null> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from('launches')
@@ -439,7 +440,7 @@ export async function getLaunchBySlug(slug: string): Promise<any | null> {
     return null;
   }
   return data;
-}
+});
 
 export async function getLaunchProperties(launchId: string): Promise<any[]> {
   const supabase = createServerClient();
@@ -457,12 +458,18 @@ export async function getLaunchProperties(launchId: string): Promise<any[]> {
   return data ?? [];
 }
 
+const LAUNCH_CARD_FIELDS = `
+  name, slug, neighborhood, city, description,
+  price_from, construction_stage, total_units,
+  cover_image, images
+`;
+
 export const getFeaturedLaunches = unstable_cache(
   async (limit = 4) => {
     const supabase = createServerClient();
     const { data, error } = await supabase
       .from('launches')
-      .select('*')
+      .select(LAUNCH_CARD_FIELDS)
       .eq('status', 'active')
       .eq('is_featured', true)
       .limit(limit);
@@ -483,7 +490,7 @@ export async function getDiscoverProperties(): Promise<any[]> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from('properties')
-    .select('*')
+    .select(CARD_FIELDS)
     .eq('status', 'active')
     .eq('is_discover', true)
     .order('created_at', { ascending: false });

@@ -26,6 +26,7 @@ export default function LaunchBannerCarousel({ launches }: { launches: Launch[] 
 
   useEffect(() => {
     if (launches.length <= 1) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % launches.length);
     }, 7000);
@@ -43,7 +44,7 @@ export default function LaunchBannerCarousel({ launches }: { launches: Launch[] 
       {/* Background */}
       <div className="absolute inset-0">
         {coverUrl ? (
-          <img src={coverUrl} alt={launch.name} className="w-full h-full object-cover transition-opacity duration-700" />
+          <img src={coverUrl} alt="" aria-hidden="true" width={1200} height={630} className="w-full h-full object-cover transition-[opacity] duration-700" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#1A2B3C] to-[#2d4a63]" />
         )}
@@ -60,12 +61,12 @@ export default function LaunchBannerCarousel({ launches }: { launches: Launch[] 
         </h2>
         {launch.neighborhood && (
           <p className="text-white/60 text-sm flex items-center gap-1.5 mb-3">
-            <MapPin className="w-3.5 h-3.5" />
+            <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
             {launch.neighborhood}, {launch.city}
           </p>
         )}
         <p className="text-white/70 text-base mb-2 max-w-md line-clamp-2">
-          {launch.description?.substring(0, 150)}...
+          {launch.description?.substring(0, 150)}…
         </p>
         <div className="flex items-center gap-6 mb-6 mt-4">
           {launch.price_from && (
@@ -85,7 +86,7 @@ export default function LaunchBannerCarousel({ launches }: { launches: Launch[] 
           href={`/lancamentos/${launch.slug}`}
           className="inline-flex items-center gap-2 bg-white hover:bg-gray-100 text-black font-semibold px-6 py-3 rounded-xl text-sm transition-colors"
         >
-          Conhecer empreendimento <ArrowRight className="w-4 h-4" />
+          Conhecer empreendimento <ArrowRight className="w-4 h-4" aria-hidden="true" />
         </Link>
       </div>
 
@@ -94,15 +95,17 @@ export default function LaunchBannerCarousel({ launches }: { launches: Launch[] 
         <>
           <button
             onClick={prev}
+            aria-label="Lançamento anterior"
             className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-colors z-10"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5" aria-hidden="true" />
           </button>
           <button
             onClick={next}
+            aria-label="Próximo lançamento"
             className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-colors z-10"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5" aria-hidden="true" />
           </button>
 
           {/* Dots */}
@@ -111,7 +114,9 @@ export default function LaunchBannerCarousel({ launches }: { launches: Launch[] 
               <button
                 key={idx}
                 onClick={() => setCurrent(idx)}
-                className={`h-2 rounded-full transition-all ${
+                aria-label={`Ir para lançamento ${idx + 1}`}
+                aria-current={idx === current ? 'true' : undefined}
+                className={`h-2 rounded-full transition-[width,background-color] ${
                   idx === current ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/60 w-2'
                 }`}
               />

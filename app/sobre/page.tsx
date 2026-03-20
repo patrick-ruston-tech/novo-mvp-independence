@@ -16,7 +16,7 @@ export default function SobrePage() {
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 w-full">
         <section className="relative h-[500px] md:h-[600px] w-full flex items-center overflow-hidden rounded-3xl">
           <div className="absolute inset-0">
-            <Image src="/hero/hero-1.jpg" alt="Independence Imóveis" fill className="object-cover" unoptimized priority />
+            <Image src="/hero/hero-1.jpg" alt="Independence Imóveis" fill className="object-cover" sizes="100vw" priority />
             <div className="absolute inset-0 bg-black/50" />
           </div>
           <div className="relative z-10 max-w-[1400px] mx-auto px-8 md:px-16 w-full">
@@ -42,7 +42,7 @@ export default function SobrePage() {
             {/* Image */}
             <div className="relative">
               <div className="aspect-[4/5] rounded-2xl overflow-hidden">
-                <Image src="/hero/hero-2.jpg" alt="Escritório Independence" fill className="object-cover" unoptimized />
+                <Image src="/hero/hero-2.jpg" alt="Escritório Independence" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
               </div>
               <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-gray-50 rounded-2xl -z-10"></div>
             </div>
@@ -85,7 +85,7 @@ export default function SobrePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-8 md:p-10 rounded-2xl group hover:bg-brand-red transition-colors duration-500">
               <div className="w-14 h-14 rounded-full bg-brand-red/10 flex items-center justify-center mb-6 group-hover:bg-white/20">
-                <Rocket className="w-6 h-6 text-brand-red group-hover:text-white transition-colors" />
+                <Rocket className="w-6 h-6 text-brand-red group-hover:text-white transition-colors" aria-hidden="true" />
               </div>
               <h3 className="font-heading font-bold text-xl mb-3 text-black group-hover:text-white transition-colors">Missão</h3>
               <p className="text-gray-500 leading-relaxed group-hover:text-white/80 transition-colors">
@@ -94,7 +94,7 @@ export default function SobrePage() {
             </div>
             <div className="bg-white p-8 md:p-10 rounded-2xl group hover:bg-brand-red transition-colors duration-500">
               <div className="w-14 h-14 rounded-full bg-brand-red/10 flex items-center justify-center mb-6 group-hover:bg-white/20">
-                <Eye className="w-6 h-6 text-brand-red group-hover:text-white transition-colors" />
+                <Eye className="w-6 h-6 text-brand-red group-hover:text-white transition-colors" aria-hidden="true" />
               </div>
               <h3 className="font-heading font-bold text-xl mb-3 text-black group-hover:text-white transition-colors">Visão</h3>
               <p className="text-gray-500 leading-relaxed group-hover:text-white/80 transition-colors">
@@ -103,7 +103,7 @@ export default function SobrePage() {
             </div>
             <div className="bg-white p-8 md:p-10 rounded-2xl group hover:bg-brand-red transition-colors duration-500">
               <div className="w-14 h-14 rounded-full bg-brand-red/10 flex items-center justify-center mb-6 group-hover:bg-white/20">
-                <Diamond className="w-6 h-6 text-brand-red group-hover:text-white transition-colors" />
+                <Diamond className="w-6 h-6 text-brand-red group-hover:text-white transition-colors" aria-hidden="true" />
               </div>
               <h3 className="font-heading font-bold text-xl mb-3 text-black group-hover:text-white transition-colors">Valores</h3>
               <p className="text-gray-500 leading-relaxed group-hover:text-white/80 transition-colors">
@@ -125,7 +125,7 @@ export default function SobrePage() {
             <div className="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-y-10 gap-x-8">
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
-                  <Award className="w-7 h-7 text-[#EC5B13]" />
+                  <Award className="w-7 h-7 text-[#EC5B13]" aria-hidden="true" />
                 </div>
                 <div>
                   <h4 className="font-heading font-bold text-lg mb-2 text-black">Curadoria Exclusiva</h4>
@@ -134,7 +134,7 @@ export default function SobrePage() {
               </div>
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
-                  <Heart className="w-7 h-7 text-[#EC5B13]" />
+                  <Heart className="w-7 h-7 text-[#EC5B13]" aria-hidden="true" />
                 </div>
                 <div>
                   <h4 className="font-heading font-bold text-lg mb-2 text-black">Atendimento Humanizado</h4>
@@ -143,7 +143,7 @@ export default function SobrePage() {
               </div>
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
-                  <Shield className="w-7 h-7 text-[#EC5B13]" />
+                  <Shield className="w-7 h-7 text-[#EC5B13]" aria-hidden="true" />
                 </div>
                 <div>
                   <h4 className="font-heading font-bold text-lg mb-2 text-black">Segurança Jurídica</h4>
@@ -152,7 +152,7 @@ export default function SobrePage() {
               </div>
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
-                  <TrendingUp className="w-7 h-7 text-[#EC5B13]" />
+                  <TrendingUp className="w-7 h-7 text-[#EC5B13]" aria-hidden="true" />
                 </div>
                 <div>
                   <h4 className="font-heading font-bold text-lg mb-2 text-black">Inteligência de Mercado</h4>

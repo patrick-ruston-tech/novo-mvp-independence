@@ -29,7 +29,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
                 alt={featured.title}
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
-                unoptimized
+                sizes="100vw"
                 priority
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
@@ -77,7 +77,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
                     alt={post.title}
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    unoptimized
+                    sizes="(max-width: 768px) 100vw, 33vw"
                   />
                   <span className="absolute top-3 left-3 bg-[#EC5B13] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-lg">
                     {post.category}

@@ -21,17 +21,19 @@ export default function Footer() {
                 href="https://www.instagram.com/independenceimoveis"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Instagram da Independence Imóveis"
                 className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               >
-                <Instagram className="w-4 h-4 text-gray-300" />
+                <Instagram className="w-4 h-4 text-gray-300" aria-hidden="true" />
               </a>
               <a
                 href="https://www.facebook.com/independenceimoveis"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Facebook da Independence Imóveis"
                 className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               >
-                <Facebook className="w-4 h-4 text-gray-300" />
+                <Facebook className="w-4 h-4 text-gray-300" aria-hidden="true" />
               </a>
             </div>
           </div>
@@ -63,7 +65,7 @@ export default function Footer() {
             <h3 className="text-white font-semibold text-sm mb-4">Contato</h3>
             <ul className="space-y-3">
               <li className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-brand-red mt-0.5 flex-shrink-0" />
+                <MapPin className="w-4 h-4 text-brand-red mt-0.5 flex-shrink-0" aria-hidden="true" />
                 <span className="text-sm text-gray-400">
                   Av. Adhemar de Barros, 1234<br />
                   Vila Adyana, SJC - SP
@@ -71,13 +73,13 @@ export default function Footer() {
               </li>
               <li>
                 <a href="tel:+551239410000" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-                  <Phone className="w-4 h-4 text-brand-red flex-shrink-0" />
+                  <Phone className="w-4 h-4 text-brand-red flex-shrink-0" aria-hidden="true" />
                   (12) 3941-0000
                 </a>
               </li>
               <li>
                 <a href="https://wa.me/5512997810000" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-                  <MessageCircle className="w-4 h-4 text-brand-red flex-shrink-0" />
+                  <MessageCircle className="w-4 h-4 text-brand-red flex-shrink-0" aria-hidden="true" />
                   (12) 99781-0000 (WhatsApp)
                 </a>
               </li>
@@ -90,16 +92,20 @@ export default function Footer() {
             <p className="text-sm text-gray-400 mb-4">
               Receba novidades e oportunidades exclusivas por e-mail.
             </p>
-            <div className="flex gap-2">
+            <form className="flex gap-2" action="#">
+              <label htmlFor="newsletter-email" className="sr-only">Seu e-mail</label>
               <input
+                id="newsletter-email"
                 type="email"
-                placeholder="Digite seu e-mail"
+                name="email"
+                autoComplete="email"
+                placeholder="Digite seu e-mail…"
                 className="flex-1 bg-white/10 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-brand-red focus:border-brand-red"
               />
-              <button className="bg-brand-red hover:bg-brand-dark-red text-white px-3 py-2.5 rounded-lg transition-colors flex-shrink-0">
-                <ChevronRight className="w-4 h-4" />
+              <button type="submit" aria-label="Inscrever no newsletter" className="bg-brand-red hover:bg-brand-dark-red text-white px-3 py-2.5 rounded-lg transition-colors flex-shrink-0">
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </button>
-            </div>
+            </form>
           </div>
 
         </div>

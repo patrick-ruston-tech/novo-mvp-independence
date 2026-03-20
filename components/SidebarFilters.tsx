@@ -108,7 +108,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-heading font-bold text-black flex items-center gap-2">
-          <SlidersHorizontal className="w-5 h-5" />
+          <SlidersHorizontal className="w-5 h-5" aria-hidden="true" />
           Filtros
         </h2>
         {hasFilters && (
@@ -121,7 +121,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {/* Localização */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-          <MapPin className="w-3.5 h-3.5" /> Localização
+          <MapPin className="w-3.5 h-3.5" aria-hidden="true" /> Localização
         </label>
         <select
           value={selectedCity}
@@ -137,7 +137,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {/* Bairro */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-          <Building2 className="w-3.5 h-3.5" /> Bairro
+          <Building2 className="w-3.5 h-3.5" aria-hidden="true" /> Bairro
         </label>
         <select
           value={selectedNeighborhood}
@@ -160,14 +160,14 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {/* Tipo de imóvel */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-          <Home className="w-3.5 h-3.5" /> Tipo de Imóvel
+          <Home className="w-3.5 h-3.5" aria-hidden="true" /> Tipo de Imóvel
         </label>
         <div className="flex flex-col gap-2">
           {TYPES.map(tipo => (
             <button
               key={tipo.value}
               onClick={() => togglePill(tipo.value, selectedType, setSelectedType)}
-              className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`px-3 py-2 rounded-xl text-sm font-medium transition-[background-color,color,border-color] ${
                 selectedType === tipo.value
                   ? 'bg-brand-red text-white'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
@@ -182,7 +182,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {/* Faixa de Preço */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-          <DollarSign className="w-3.5 h-3.5" /> Faixa de Preço
+          <DollarSign className="w-3.5 h-3.5" aria-hidden="true" /> Faixa de Preço
         </label>
         <div className="space-y-4">
           <div className="flex justify-between text-sm mb-2">
@@ -221,14 +221,14 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {/* Quartos */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-          <BedDouble className="w-3.5 h-3.5" /> Quartos
+          <BedDouble className="w-3.5 h-3.5" aria-hidden="true" /> Quartos
         </label>
         <div className="flex gap-2">
           {BEDROOMS.map(q => (
             <button
               key={q}
               onClick={() => togglePill(q, selectedBedrooms, setSelectedBedrooms)}
-              className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-all ${
+              className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-[background-color,color,border-color] ${
                 selectedBedrooms === q
                   ? 'bg-brand-red text-white'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
@@ -243,14 +243,14 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {/* Suítes */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-          <Bath className="w-3.5 h-3.5" /> Suítes
+          <Bath className="w-3.5 h-3.5" aria-hidden="true" /> Suítes
         </label>
         <div className="flex gap-2">
           {SUITES.map(s => (
             <button
               key={s}
               onClick={() => togglePill(s, selectedSuites, setSelectedSuites)}
-              className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-all ${
+              className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-[background-color,color,border-color] ${
                 selectedSuites === s
                   ? 'bg-brand-red text-white'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
@@ -265,14 +265,14 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {/* Vagas */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-          <Car className="w-3.5 h-3.5" /> Vagas de Garagem
+          <Car className="w-3.5 h-3.5" aria-hidden="true" /> Vagas de Garagem
         </label>
         <div className="flex gap-2">
           {GARAGES.map(v => (
             <button
               key={v}
               onClick={() => togglePill(v, selectedGarages, setSelectedGarages)}
-              className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-all ${
+              className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-[background-color,color,border-color] ${
                 selectedGarages === v
                   ? 'bg-brand-red text-white'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
@@ -287,24 +287,31 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {/* Comodidades */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-          <Sparkles className="w-3.5 h-3.5" /> Comodidades
+          <Sparkles className="w-3.5 h-3.5" aria-hidden="true" /> Comodidades
         </label>
         <div className="space-y-2">
-          {AMENITIES.map(amenity => (
-            <label key={amenity} className="flex items-center gap-3 cursor-pointer group">
-              <div
-                onClick={() => toggleAmenity(amenity)}
-                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+          {AMENITIES.map(amenity => {
+            const id = `amenity-${amenity.replace(/\s+/g, '-').toLowerCase()}`;
+            return (
+              <label key={amenity} htmlFor={id} className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  id={id}
+                  checked={selectedAmenities.includes(amenity)}
+                  onChange={() => toggleAmenity(amenity)}
+                  className="sr-only"
+                />
+                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-[background-color,border-color] ${
                   selectedAmenities.includes(amenity)
                     ? 'bg-brand-red border-brand-red'
                     : 'border-gray-300 group-hover:border-gray-400'
-                }`}
-              >
-                {selectedAmenities.includes(amenity) && <Check className="w-3 h-3 text-white" />}
-              </div>
-              <span className="text-sm text-gray-700">{amenity}</span>
-            </label>
-          ))}
+                }`}>
+                  {selectedAmenities.includes(amenity) && <Check className="w-3 h-3 text-white" aria-hidden="true" />}
+                </div>
+                <span className="text-sm text-gray-700">{amenity}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
 
@@ -333,7 +340,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
           onClick={() => setMobileOpen(true)}
           className="w-full bg-white border border-gray-200 text-black font-semibold px-4 py-3 rounded-xl flex items-center justify-center gap-2 text-sm hover:bg-gray-50 transition-colors"
         >
-          <SlidersHorizontal className="w-4 h-4" />
+          <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
           Filtros {hasFilters ? '· Filtros ativos' : ''}
         </button>
       </div>
@@ -342,11 +349,11 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <div className="relative ml-auto h-full w-[340px] max-w-[90vw] bg-white shadow-2xl overflow-y-auto p-6">
+          <div className="relative ml-auto h-full w-[340px] max-w-[90vw] bg-white shadow-2xl overflow-y-auto overscroll-contain p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-heading font-bold text-black">Filtros</h2>
-              <button onClick={() => setMobileOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                <X className="w-5 h-5" />
+              <button onClick={() => setMobileOpen(false)} aria-label="Fechar filtros" className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
             {filterContent}

@@ -50,7 +50,7 @@ export default function LaunchCard({ launch }: LaunchCardProps) {
               alt={launch.name}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
-              unoptimized
+              sizes="(max-width: 768px) 100vw, 33vw"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-[#1A2B3C] to-[#2d4a63] flex items-center justify-center">

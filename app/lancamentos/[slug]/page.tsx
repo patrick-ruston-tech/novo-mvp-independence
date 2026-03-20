@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { getLaunchBySlug, getLaunchProperties, getFeaturedLaunches } from '@/lib/queries';
 import ContactForm from '@/components/ContactForm';
 import PropertyMapWrapper from '@/components/PropertyMapWrapper';
@@ -31,9 +32,20 @@ export async function generateMetadata(
   const resolvedParams = await params;
   const launch = await getLaunchBySlug(resolvedParams.slug);
   if (!launch) return { title: 'Lançamento não encontrado' };
+
+  const imageUrl = launch.cover_image || '/hero/hero-1.jpg';
+  const description = launch.description?.substring(0, 150) || `Conheça o ${launch.name}`;
+
   return {
-    title: `${launch.name} | Lançamentos | Independence`,
-    description: launch.description?.substring(0, 150) || `Conheça o ${launch.name}`,
+    title: `${launch.name} | Lançamentos`,
+    description,
+    alternates: { canonical: `https://independenceimoveis.com.br/lancamentos/${resolvedParams.slug}` },
+    openGraph: {
+      title: launch.name,
+      description,
+      type: 'article',
+      images: [{ url: imageUrl, width: 1200, height: 630 }],
+    },
   };
 }
 
@@ -260,9 +272,9 @@ export default async function LaunchDetailPage({ params }: { params: Promise<{ s
               <h2 className="text-2xl font-heading font-bold text-black">Outros Lançamentos</h2>
               <p className="text-sm text-gray-500 mt-1">Explore mais oportunidades exclusivas da Independence</p>
             </div>
-            <a href="/lancamentos" className="text-sm font-semibold text-[#EC5B13] hover:underline flex items-center gap-1">
+            <Link href="/lancamentos" className="text-sm font-semibold text-[#EC5B13] hover:underline flex items-center gap-1">
               Ver todos →
-            </a>
+            </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {filteredLaunches.map((l: any) => (

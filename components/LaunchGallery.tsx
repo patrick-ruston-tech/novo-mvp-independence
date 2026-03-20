@@ -42,7 +42,7 @@ export default function LaunchGallery({ images }: { images: string[] }) {
           fill
           className={`object-cover transition-all duration-500 group-hover:brightness-95 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setLoaded(true)}
-          unoptimized
+          sizes="100vw"
           priority
         />
 
@@ -103,7 +103,7 @@ export default function LaunchGallery({ images }: { images: string[] }) {
                 idx === currentIdx ? 'ring-2 ring-[#EC5B13] opacity-100' : 'opacity-50 hover:opacity-80'
               }`}
             >
-              <Image src={img} alt={`Foto ${idx + 1}`} fill className="object-cover" unoptimized />
+              <Image src={img} alt={`Foto ${idx + 1}`} fill className="object-cover" sizes="80px" />
             </button>
           ))}
         </div>
@@ -123,7 +123,7 @@ export default function LaunchGallery({ images }: { images: string[] }) {
               <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
             </button>
             <div className="w-full max-w-5xl h-[70vh] relative">
-              <Image src={images[currentIdx]} alt={`Foto ${currentIdx + 1}`} fill className="object-contain" unoptimized />
+              <Image src={images[currentIdx]} alt={`Foto ${currentIdx + 1}`} fill className="object-contain" sizes="100vw" />
             </div>
             <button aria-label="Próxima foto" onClick={nextImage} className="absolute right-2 sm:right-4 p-2 sm:p-3 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white z-10">
               <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
@@ -140,7 +140,7 @@ export default function LaunchGallery({ images }: { images: string[] }) {
                     idx === currentIdx ? 'ring-2 ring-white opacity-100' : 'opacity-40 hover:opacity-70'
                   }`}
                 >
-                  <Image src={img} alt={`Miniatura ${idx + 1}`} fill className="object-cover" unoptimized />
+                  <Image src={img} alt={`Miniatura ${idx + 1}`} fill className="object-cover" sizes="64px" />
                 </button>
               ))}
             </div>

@@ -116,7 +116,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             alt={post.title}
             fill
             className="object-cover"
-            unoptimized
+            sizes="100vw"
             priority
           />
         </div>
@@ -189,7 +189,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                     alt={related.title}
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    unoptimized
+                    sizes="(max-width: 768px) 100vw, 33vw"
                   />
                 </div>
                 <div className="text-xs text-[#EC5B13] font-bold uppercase tracking-wider mb-2">{related.category}</div>

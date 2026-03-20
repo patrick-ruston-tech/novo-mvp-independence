@@ -49,7 +49,7 @@ export default function PropertyCard({ property }: { property: PropertyCardType 
             alt={displayTitle}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-            className={`object-cover transition-all duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'
+            className={`object-cover transition-[opacity,transform] duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
             onLoad={() => setImageLoaded(true)}
             loading="lazy"
@@ -79,15 +79,17 @@ export default function PropertyCard({ property }: { property: PropertyCardType 
             <>
               <button
                 onClick={prevImage}
+                aria-label="Imagem anterior"
                 className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
               >
-                <ChevronLeft className="w-4 h-4 text-black" />
+                <ChevronLeft className="w-4 h-4 text-black" aria-hidden="true" />
               </button>
               <button
                 onClick={nextImage}
+                aria-label="Próxima imagem"
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
               >
-                <ChevronRight className="w-4 h-4 text-black" />
+                <ChevronRight className="w-4 h-4 text-black" aria-hidden="true" />
               </button>
 
               {/* Dots */}

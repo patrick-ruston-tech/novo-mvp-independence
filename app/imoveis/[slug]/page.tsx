@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { getPropertyBySlug, getSimilarProperties, getNeighborhoodBySlug } from '@/lib/queries';
 import { formatPrice, getDisplayTitle } from '@/lib/format';
 import PropertyGallery from '@/components/PropertyGallery';
@@ -33,11 +34,23 @@ export async function generateMetadata(
     ? property.images.find(img => img.is_primary)?.url || property.images[0].url
     : undefined;
 
+  const imageUrl = mainImage || '/hero/hero-1.jpg';
+
   return {
     title: `${title} | Independence`,
     description,
+    alternates: { canonical: `https://independenceimoveis.com.br/imoveis/${resolvedParams.slug}` },
     openGraph: {
-      images: mainImage ? [mainImage] : [],
+      title,
+      description,
+      type: 'article',
+      images: [{ url: imageUrl, width: 800, height: 600 }],
+    },
+    twitter: {
+      card: 'summary_large_image' as const,
+      title,
+      description,
+      images: [imageUrl],
     },
   };
 }
@@ -82,13 +95,53 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   return (
     <>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'RealEstateListing',
+          name: property.title,
+          description: property.description?.substring(0, 200),
+          url: `https://independenceimoveis.com.br/imoveis/${property.slug}`,
+          image: property.images?.[0]?.url || property.images?.[0],
+          datePosted: property.listed_at || property.created_at,
+          offers: {
+            '@type': 'Offer',
+            price: property.price_sale || property.price_rent || 0,
+            priceCurrency: 'BRL',
+            availability: 'https://schema.org/InStock',
+          },
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: property.address || '',
+            addressLocality: property.city,
+            addressRegion: property.state || 'SP',
+            addressCountry: 'BR',
+          },
+          ...(property.latitude && property.longitude ? {
+            geo: {
+              '@type': 'GeoCoordinates',
+              latitude: property.latitude,
+              longitude: property.longitude,
+            },
+          } : {}),
+          numberOfRooms: property.bedrooms || undefined,
+          floorSize: {
+            '@type': 'QuantitativeValue',
+            value: property.living_area || property.lot_area || 0,
+            unitCode: 'MTK',
+          },
+        }),
+      }}
+    />
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-0 w-full">
 
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-400 mb-4 flex items-center gap-2">
-        <a href="/" className="hover:text-black transition-colors">Início</a>
+        <Link href="/" className="hover:text-black transition-colors">Início</Link>
         <span>·</span>
-        <a href="/comprar" className="hover:text-black transition-colors">{typeLabel}</a>
+        <Link href="/comprar" className="hover:text-black transition-colors">{typeLabel}</Link>
         <span>·</span>
         <span className="text-gray-600">{bairroInfo?.name || property.neighborhood}</span>
       </nav>

@@ -13,6 +13,7 @@ export default function HeroCarousel() {
   const [currentIdx, setCurrentIdx] = useState(0);
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const interval = setInterval(() => {
       setCurrentIdx((prev) => (prev + 1) % heroImages.length);
     }, 6000);
@@ -34,7 +35,7 @@ export default function HeroCarousel() {
             fill
             className="object-cover"
             priority={idx === 0}
-            unoptimized
+            sizes="100vw"
           />
         </div>
       ))}

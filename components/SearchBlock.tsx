@@ -62,11 +62,12 @@ function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setP
       <div className="relative flex-1">
         <button
           onClick={() => setOpenFilter(openFilter === 'tipo' ? null : 'tipo')}
+          aria-expanded={openFilter === 'tipo'}
           className={`w-full flex items-center justify-center gap-1 border rounded-lg py-2 text-xs transition-colors truncate whitespace-nowrap overflow-hidden ${
             tipo ? 'border-brand-red text-brand-red font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'
           }`}
         >
-          {tipo ? TYPES.find(t => t.value === tipo)?.label?.substring(0, 8) : 'Tipo'} <ChevronDown className="w-3 h-3 flex-shrink-0" />
+          {tipo ? TYPES.find(t => t.value === tipo)?.label?.substring(0, 8) : 'Tipo'} <ChevronDown className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
         </button>
         {openFilter === 'tipo' && (
           <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-1.5 z-50 min-w-[180px]">
@@ -86,11 +87,12 @@ function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setP
       <div className="relative flex-1">
         <button
           onClick={() => setOpenFilter(openFilter === 'preco' ? null : 'preco')}
+          aria-expanded={openFilter === 'preco'}
           className={`w-full flex items-center justify-center gap-1 border rounded-lg py-2 text-xs transition-colors truncate whitespace-nowrap overflow-hidden ${
             precoMax ? 'border-brand-red text-brand-red font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'
           }`}
         >
-          {precoMax ? PRICES.find(p => p.value === precoMax)?.label : 'Preço'} <ChevronDown className="w-3 h-3 flex-shrink-0" />
+          {precoMax ? PRICES.find(p => p.value === precoMax)?.label : 'Preço'} <ChevronDown className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
         </button>
         {openFilter === 'preco' && (
           <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-1.5 z-50 min-w-[180px]">
@@ -110,11 +112,12 @@ function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setP
       <div className="relative flex-1">
         <button
           onClick={() => setOpenFilter(openFilter === 'quartos' ? null : 'quartos')}
+          aria-expanded={openFilter === 'quartos'}
           className={`w-full flex items-center justify-center gap-1 border rounded-lg py-2 text-xs transition-colors truncate whitespace-nowrap overflow-hidden ${
             quartos ? 'border-brand-red text-brand-red font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'
           }`}
         >
-          {quartos ? `${quartos}q` : 'Quartos'} <ChevronDown className="w-3 h-3 flex-shrink-0" />
+          {quartos ? `${quartos}q` : 'Quartos'} <ChevronDown className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
         </button>
         {openFilter === 'quartos' && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-2 z-50">
@@ -133,9 +136,10 @@ function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setP
       <div className="relative flex-1">
         <button
           onClick={() => setOpenFilter(openFilter === 'bairros' ? null : 'bairros')}
+          aria-expanded={openFilter === 'bairros'}
           className="w-full flex items-center justify-center gap-1 border border-gray-200 text-gray-600 hover:border-gray-300 rounded-lg py-2 text-xs transition-colors truncate whitespace-nowrap overflow-hidden"
         >
-          Bairros <ChevronDown className="w-3 h-3 flex-shrink-0" />
+          Bairros <ChevronDown className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
         </button>
         {openFilter === 'bairros' && (
           <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg p-2 z-50 min-w-[180px] text-xs text-gray-500 text-center py-3">
@@ -247,10 +251,13 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
         {/* Input Bairro / Código */}
         <div className="relative" ref={dropdownRef}>
           <div className="relative flex items-center">
-            <Search className="absolute left-4 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-4 text-gray-400 w-4 h-4" aria-hidden="true" />
             <input
               type="text"
-              placeholder="Digite o bairro ou Código. ex: Urbanova, Satélite..."
+              name="busca"
+              aria-label="Buscar por bairro ou código"
+              autoComplete="off"
+              placeholder="Digite o bairro ou Código. ex: Urbanova, Satélite…"
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -258,9 +265,9 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
               }}
               onFocus={() => setIsDropdownOpen(true)}
               onKeyDown={handleKeyDown}
-              className="w-full border border-gray-200 rounded-xl pl-11 pr-10 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none transition-all text-black"
+              className="w-full border border-gray-200 rounded-xl pl-11 pr-10 py-3 text-sm focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none transition-colors text-black"
             />
-            <Search className="absolute right-4 text-gray-400 w-4 h-4 pointer-events-none" />
+            <Search className="absolute right-4 text-gray-400 w-4 h-4 pointer-events-none" aria-hidden="true" />
           </div>
 
           {/* Dropdown Bairros */}
