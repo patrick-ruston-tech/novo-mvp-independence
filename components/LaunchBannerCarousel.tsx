@@ -37,7 +37,9 @@ export default function LaunchBannerCarousel({ launches }: { launches: Launch[] 
   const prev = () => setCurrent((prev) => (prev - 1 + launches.length) % launches.length);
 
   const launch = launches[current];
-  const coverUrl = launch.cover_image || (launch.images && launch.images.length > 0 ? launch.images[0].url : null);
+  const coverUrl = (launch.images && launch.images.length > 0)
+    ? (typeof launch.images[0] === 'string' ? launch.images[0] : launch.images[0].url)
+    : launch.cover_image || null;
 
   return (
     <section className="relative overflow-hidden rounded-3xl min-h-[420px] flex items-center">

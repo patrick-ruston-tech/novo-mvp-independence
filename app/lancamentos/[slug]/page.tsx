@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { getLaunchBySlug, getLaunchProperties, getFeaturedLaunches } from '@/lib/queries';
 import ContactForm from '@/components/ContactForm';
 import PropertyMapWrapper from '@/components/PropertyMapWrapper';
-import LaunchGallery from '@/components/LaunchGallery';
 import GalleryGrid from '@/components/GalleryGrid';
 import FloorPlans from '@/components/FloorPlans';
 import LaunchCard from '@/components/LaunchCard';
@@ -61,8 +60,9 @@ export default async function LaunchDetailPage({ params }: { params: Promise<{ s
   ]);
 
   const progress = getProgress(launch.start_date, launch.delivery_date_actual);
-  const coverImages = launch.cover_image ? [launch.cover_image] :
-    (launch.images && launch.images.length > 0 ? [typeof launch.images[0] === 'string' ? launch.images[0] : launch.images[0].url] : []);
+  const allImages = (launch.images && launch.images.length > 0)
+    ? launch.images.map((img: any) => typeof img === 'string' ? img : img.url)
+    : (launch.cover_image ? [launch.cover_image] : []);
 
   const filteredLaunches = otherLaunches.filter((l: any) => l.slug !== launch.slug);
 
@@ -108,21 +108,10 @@ export default async function LaunchDetailPage({ params }: { params: Promise<{ s
         )}
       </div>
 
-      {/* ===== GALLERY (Cover) ===== */}
-      {coverImages.length > 0 && (
-        <div className="mb-10">
-          <LaunchGallery images={coverImages} />
-        </div>
-      )}
-
-      {/* Gallery Grid */}
-      {launch.images && launch.images.length > 0 && (
+      {/* Gallery */}
+      {allImages.length > 0 && (
         <div className="mb-12">
-          <h2 className="text-xl font-heading font-bold text-black mb-4 flex items-center gap-2">
-            <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
-            Galeria do Empreendimento
-          </h2>
-          <GalleryGrid images={launch.images.map((img: any) => typeof img === 'string' ? img : img.url)} />
+          <GalleryGrid images={allImages} />
         </div>
       )}
 

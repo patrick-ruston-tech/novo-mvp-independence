@@ -37,7 +37,9 @@ function getProgress(startDate?: string, deliveryDate?: string): number {
 
 export default function LaunchCard({ launch }: LaunchCardProps) {
   const progress = getProgress(launch.start_date, launch.delivery_date_actual);
-  const coverUrl = launch.cover_image || (launch.images && launch.images.length > 0 ? launch.images[0].url : null);
+  const coverUrl = (launch.images && launch.images.length > 0)
+    ? (typeof launch.images[0] === 'string' ? launch.images[0] : launch.images[0].url)
+    : launch.cover_image || null;
 
   return (
     <Link href={`/lancamentos/${launch.slug}`} className="group block">
