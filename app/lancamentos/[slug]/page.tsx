@@ -8,7 +8,7 @@ import LaunchGallery from '@/components/LaunchGallery';
 import GalleryGrid from '@/components/GalleryGrid';
 import FloorPlans from '@/components/FloorPlans';
 import LaunchCard from '@/components/LaunchCard';
-import { Maximize, Bed, Bath, Car, MapPin, Play, Download } from 'lucide-react';
+import { Building2, Building, DollarSign, Calendar, MapPin, CheckCircle, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 
 export const revalidate = 3600;
@@ -136,28 +136,28 @@ export default async function LaunchDetailPage({ params }: { params: Promise<{ s
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               {launch.total_units && (
                 <div className="text-center">
-                  <Maximize className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
+                  <Building2 className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
                   <div className="text-lg font-heading font-bold text-black">{launch.total_units}</div>
                   <div className="text-[11px] text-gray-400 uppercase tracking-wider mt-0.5">Unidades</div>
                 </div>
               )}
               {launch.price_from && (
                 <div className="text-center">
-                  <Bed className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
+                  <DollarSign className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
                   <div className="text-lg font-heading font-bold text-black">{formatPrice(launch.price_from)}</div>
                   <div className="text-[11px] text-gray-400 uppercase tracking-wider mt-0.5">A partir de</div>
                 </div>
               )}
               {launch.delivery_date && (
                 <div className="text-center">
-                  <Car className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
+                  <Calendar className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
                   <div className="text-lg font-heading font-bold text-black">{launch.delivery_date}</div>
                   <div className="text-[11px] text-gray-400 uppercase tracking-wider mt-0.5">Entrega</div>
                 </div>
               )}
               {launch.builder && (
                 <div className="text-center">
-                  <Bath className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
+                  <Building className="w-6 h-6 text-[#EC5B13] mx-auto mb-2" />
                   <div className="text-lg font-heading font-bold text-black">{launch.builder}</div>
                   <div className="text-[11px] text-gray-400 uppercase tracking-wider mt-0.5">Construtora</div>
                 </div>
