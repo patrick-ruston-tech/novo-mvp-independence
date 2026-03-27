@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://independenceimoveis.com.br' },
 };
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 // ── Async section components for Suspense streaming ──
 

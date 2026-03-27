@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://independenceimoveis.com.br/descobrir' },
 };
 
-export const revalidate = 3600;
+export const revalidate = 60;
 
 export default async function DescobrirPage() {
   const properties = await getDiscoverProperties();

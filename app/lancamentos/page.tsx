@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://independenceimoveis.com.br/lancamentos' },
 };
 
-export const revalidate = 3600;
+export const revalidate = 60;
 
 export default async function LancamentosPage() {
   const launches = await getLaunches();
