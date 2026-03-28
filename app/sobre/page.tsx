@@ -34,10 +34,10 @@ export default async function SobrePage() {
                 Quem Somos
               </span>
               <h1 className="font-heading font-extrabold text-4xl md:text-6xl text-white leading-tight">
-                Tradição em Realizar Sonhos no Vale do Paraíba
+                Criamos conexões, revelamos oportunidades e construímos histórias.
               </h1>
               <p className="mt-6 text-lg text-white/80 max-w-xl leading-relaxed">
-                Mais do que imóveis, conectamos pessoas aos lares que transformam suas vidas. Transparência, ética e segurança jurídica em cada negociação.
+                Na Independence, não vendemos apenas imóveis — acreditamos no poder da escuta, da empatia e do respeito como ferramentas para transformar vidas.
               </p>
             </div>
           </div>
@@ -58,14 +58,14 @@ export default async function SobrePage() {
             {/* Text */}
             <div>
               <h2 className="font-heading font-bold text-3xl md:text-4xl text-black leading-tight mb-8">
-                A consultoria que seu <span className="text-brand-red italic">estilo de vida</span> merece.
+                Nascemos da confiança e crescemos com o propósito de <span className="text-brand-red italic">ir além</span>.
               </h2>
               <div className="space-y-5 text-gray-600 text-base leading-relaxed">
                 <p>
-                  A Independence Imóveis nasceu em São José dos Campos com o propósito de transformar a experiência de compra e venda de imóveis. Atuamos como facilitadores, conectando pessoas aos seus lares ideais com transparência, ética e segurança jurídica.
+                  Na Independence Negócios Imobiliários, criamos conexões, revelamos oportunidades e construímos histórias. Acreditamos no poder da escuta, da empatia e do respeito como ferramentas para transformar vidas de clientes, colaboradores e parceiros.
                 </p>
                 <p>
-                  Nossa equipe de consultores é especializada em cada região da cidade, garantindo que você tome a melhor decisão para sua família ou para seus negócios. São mais de 24 anos de mercado e milhares de famílias atendidas.
+                  Somos do bem, porque escolhemos agir com o coração e com a consciência, transformando cada negócio em um legado humano. Cada atendimento é guiado pela empatia, pela ética e pelo desejo genuíno de fazer a diferença.
                 </p>
               </div>
               {/* Stats */}
@@ -98,7 +98,7 @@ export default async function SobrePage() {
               </div>
               <h3 className="font-heading font-bold text-xl mb-3 text-black group-hover:text-white transition-colors">Missão</h3>
               <p className="text-gray-500 leading-relaxed group-hover:text-white/80 transition-colors">
-                Conectar pessoas a lares que potencializem sua felicidade, através de uma consultoria especializada, transparente e humana.
+                Conectar pessoas a imóveis com propósito, oferecendo um atendimento acolhedor, transparente e eficiente, promovendo bem-estar e evolução pessoal e coletiva.
               </p>
             </div>
             <div className="bg-white p-8 md:p-10 rounded-2xl group hover:bg-brand-red transition-colors duration-500">
@@ -107,7 +107,7 @@ export default async function SobrePage() {
               </div>
               <h3 className="font-heading font-bold text-xl mb-3 text-black group-hover:text-white transition-colors">Visão</h3>
               <p className="text-gray-500 leading-relaxed group-hover:text-white/80 transition-colors">
-                Ser a referência em consultoria imobiliária no Vale do Paraíba, reconhecida pela integridade, inovação e excelência no atendimento.
+                Ser referência no mercado imobiliário como uma empresa que vai além da venda e locação, deixando um legado humano e transformador para clientes, colaboradores, parceiros e sociedade.
               </p>
             </div>
             <div className="bg-white p-8 md:p-10 rounded-2xl group hover:bg-brand-red transition-colors duration-500">
@@ -116,7 +116,7 @@ export default async function SobrePage() {
               </div>
               <h3 className="font-heading font-bold text-xl mb-3 text-black group-hover:text-white transition-colors">Valores</h3>
               <p className="text-gray-500 leading-relaxed group-hover:text-white/80 transition-colors">
-                Transparência absoluta, ética em cada negociação, compromisso com o sucesso do cliente e segurança jurídica total.
+                Empatia, ética, autoconhecimento, respeito, dedicação, profissionalismo com propósito e acolhimento. Cultivamos um ambiente leve, humano e próximo.
               </p>
             </div>
           </div>
@@ -135,52 +135,29 @@ export default async function SobrePage() {
         </section>
       )}
 
-      {/* ===== POR QUE NOS ESCOLHER ===== */}
+      {/* ===== NOSSOS VALORES ===== */}
       <section className="py-20">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row gap-12 md:gap-16 items-start">
-            <div className="md:w-1/3">
-              <h2 className="font-heading font-bold text-3xl md:text-4xl text-black leading-tight mb-4">Por que escolher a Independence?</h2>
-              <p className="text-gray-500 text-base">Diferenciais que nos tornam o parceiro ideal para sua próxima conquista.</p>
-            </div>
-            <div className="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-y-10 gap-x-8">
-              <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <Award className="w-7 h-7 text-[#EC5B13]" aria-hidden="true" />
-                </div>
-                <div>
-                  <h4 className="font-heading font-bold text-lg mb-2 text-black">Curadoria Exclusiva</h4>
-                  <p className="text-gray-500 text-sm leading-relaxed">Selecionamos propriedades com alto potencial de valorização e qualidade construtiva comprovada.</p>
-                </div>
+          <div className="mb-12">
+            <h2 className="font-heading font-bold text-3xl md:text-4xl text-black leading-tight mb-4">Nossos Valores</h2>
+            <p className="text-gray-500 max-w-2xl">Os pilares que guiam cada atendimento e decisão na Independence.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { icon: Heart, title: 'Empatia', desc: 'Ouvimos com atenção e cuidamos com presença.' },
+              { icon: Shield, title: 'Ética e Moral', desc: 'Decisões justas, responsáveis e coerentes com nossos princípios.' },
+              { icon: TrendingUp, title: 'Autoconhecimento', desc: 'Crescimento pessoal como chave da evolução profissional.' },
+              { icon: Award, title: 'Respeito', desc: 'Tratamos a todos com dignidade, consideração e justiça.' },
+              { icon: Rocket, title: 'Dedicação', desc: 'Entregamos o nosso melhor, com constância e compromisso.' },
+              { icon: Eye, title: 'Profissionalismo', desc: 'Excelência técnica com intenção positiva em cada ação.' },
+              { icon: Diamond, title: 'Acolhimento', desc: 'Cultivamos um ambiente leve, humano e próximo.' },
+            ].map((valor) => (
+              <div key={valor.title} className="bg-gray-50 rounded-2xl p-6 hover:bg-brand-red hover:text-white group transition-colors duration-300">
+                <valor.icon className="w-6 h-6 text-[#EC5B13] mb-4 group-hover:text-white transition-colors" />
+                <h4 className="font-heading font-bold text-base mb-2 text-black group-hover:text-white transition-colors">{valor.title}</h4>
+                <p className="text-sm text-gray-500 leading-relaxed group-hover:text-white/80 transition-colors">{valor.desc}</p>
               </div>
-              <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <Heart className="w-7 h-7 text-[#EC5B13]" aria-hidden="true" />
-                </div>
-                <div>
-                  <h4 className="font-heading font-bold text-lg mb-2 text-black">Atendimento Humanizado</h4>
-                  <p className="text-gray-500 text-sm leading-relaxed">Consultoria pautada na escuta ativa e na personalização total da sua jornada de compra.</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <Shield className="w-7 h-7 text-[#EC5B13]" aria-hidden="true" />
-                </div>
-                <div>
-                  <h4 className="font-heading font-bold text-lg mb-2 text-black">Segurança Jurídica</h4>
-                  <p className="text-gray-500 text-sm leading-relaxed">Corpo jurídico especializado para garantir que cada transação seja impecável e segura.</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <TrendingUp className="w-7 h-7 text-[#EC5B13]" aria-hidden="true" />
-                </div>
-                <div>
-                  <h4 className="font-heading font-bold text-lg mb-2 text-black">Inteligência de Mercado</h4>
-                  <p className="text-gray-500 text-sm leading-relaxed">Análises em tempo real do mercado para orientar as melhores decisões de investimento imobiliário.</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -201,7 +178,7 @@ export default async function SobrePage() {
             Pronto para conquistar<br />sua independência?
           </h2>
           <p className="text-white/70 max-w-lg mx-auto mb-8">
-            Fale com um dos nossos consultores e descubra as melhores oportunidades em São José dos Campos e região.
+            Na Independence, valorizamos as relações humanas tanto quanto os resultados. Fale com um consultor e descubra como podemos transformar seu próximo passo.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
