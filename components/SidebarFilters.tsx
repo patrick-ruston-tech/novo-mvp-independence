@@ -42,15 +42,15 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
   const [selectedSuites, setSelectedSuites] = useState(searchParams.get('suites') || '');
   const [selectedGarages, setSelectedGarages] = useState(searchParams.get('garagens') || '');
   const [priceMin, setPriceMin] = useState(Number(searchParams.get('preco_min')) || 0);
-  const [priceMax, setPriceMax] = useState(Number(searchParams.get('preco_max')) || (transactionType === 'sale' ? 5000000 : 15000));
+  const [priceMax, setPriceMax] = useState(Number(searchParams.get('preco_max')) || (transactionType === 'sale' ? 20000000 : 15000));
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(
     searchParams.get('comodidades')?.split(',').filter(Boolean) || []
   );
   const [selectedNeighborhood, setSelectedNeighborhood] = useState(searchParams.get('bairro') || '');
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const maxPrice = transactionType === 'sale' ? 5000000 : 15000;
-  const priceStep = transactionType === 'sale' ? 50000 : 500;
+  const maxPrice = transactionType === 'sale' ? 20000000 : 15000;
+  const priceStep = transactionType === 'sale' ? 100000 : 500;
 
   function formatPriceBR(value: number): string {
     if (value >= 1000000) return `R$ ${(value / 1000000).toFixed(1).replace('.', ',')}M`;

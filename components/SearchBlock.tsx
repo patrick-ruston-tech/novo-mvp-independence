@@ -46,10 +46,13 @@ function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setP
 
   const PRICES = mode === 'comprar'
     ? [
-        { label: 'Até R$ 300mil', value: '300000' },
         { label: 'Até R$ 500mil', value: '500000' },
         { label: 'Até R$ 1M', value: '1000000' },
         { label: 'Até R$ 2M', value: '2000000' },
+        { label: 'Até R$ 5M', value: '5000000' },
+        { label: 'Até R$ 10M', value: '10000000' },
+        { label: 'Até R$ 15M', value: '15000000' },
+        { label: 'Acima de R$ 15M', value: '15000001' },
       ]
     : [
         { label: 'Até R$ 2.000', value: '2000' },
@@ -199,7 +202,13 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
 
     if (filterTipo) params.set('tipo', filterTipo);
     if (filterQuartos) params.set('quartos', filterQuartos);
-    if (filterPrecoMax) params.set('preco_max', filterPrecoMax);
+    if (filterPrecoMax) {
+      if (filterPrecoMax === '15000001') {
+        params.set('preco_min', '15000000');
+      } else {
+        params.set('preco_max', filterPrecoMax);
+      }
+    }
 
     const codeMatch = searchQuery.toUpperCase().match(/^[A-Z]{2}\d+/);
     if (codeMatch) {
