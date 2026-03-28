@@ -526,3 +526,22 @@ export async function getTestimonials(location: 'home' | 'about' | 'all' = 'all'
   }
   return data ?? [];
 }
+
+/**
+ * Busca membros da equipe ativos
+ */
+export async function getTeamMembers(): Promise<any[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from('team_members')
+    .select('id, name, role, photo')
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('getTeamMembers error:', error);
+    return [];
+  }
+  return data ?? [];
+}

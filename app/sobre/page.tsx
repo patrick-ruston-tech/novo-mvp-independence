@@ -3,7 +3,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Shield, Heart, TrendingUp, Award, Rocket, Eye, Diamond } from 'lucide-react';
 import TestimonialCarousel from '@/components/TestimonialCarousel';
-import { getTestimonials } from '@/lib/queries';
+import TeamCarousel from '@/components/TeamCarousel';
+import { getTestimonials, getTeamMembers } from '@/lib/queries';
 
 export const revalidate = 300;
 
@@ -13,7 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default async function SobrePage() {
-  const testimonials = await getTestimonials('about');
+  const [testimonials, teamMembers] = await Promise.all([
+    getTestimonials('about'),
+    getTeamMembers(),
+  ]);
   return (
     <div className="w-full">
 
@@ -182,37 +186,13 @@ export default async function SobrePage() {
       </section>
 
       {/* ===== EQUIPE ===== */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-12">
-            <h2 className="font-heading font-bold text-3xl md:text-4xl text-black">Nossa Equipe</h2>
-            <p className="text-gray-500 mt-2">Consultores dedicados a encontrar o imóvel ideal para você.</p>
+      {teamMembers.length > 0 && (
+        <section className="py-20 bg-gray-50">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <TeamCarousel members={teamMembers} />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { name: 'André Santos', role: 'Diretor Geral', initials: 'AS' },
-              { name: 'Mariana Costa', role: 'Diretora Comercial', initials: 'MC' },
-              { name: 'Ricardo Almeida', role: 'Consultor Sênior', initials: 'RA' },
-              { name: 'Beatriz Lima', role: 'Consultora de Locação', initials: 'BL' },
-            ].map((member) => (
-              <div key={member.name} className="bg-white rounded-2xl overflow-hidden group">
-                <div className="aspect-square bg-gradient-to-br from-[#1A2B3C] to-[#2d4a63] flex items-center justify-center">
-                  <span className="text-4xl font-heading font-bold text-white/30 group-hover:text-white/50 transition-colors">
-                    {member.initials}
-                  </span>
-                </div>
-                <div className="p-5">
-                  <h5 className="font-heading font-bold text-base text-black">{member.name}</h5>
-                  <p className="text-gray-500 text-sm">{member.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-sm text-gray-400 text-center mt-8 italic">
-            Fotos da equipe serão adicionadas em breve.
-          </p>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ===== CTA FINAL ===== */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
