@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { getPropertyBySlug, getSimilarProperties, getNeighborhoodBySlug } from '@/lib/queries';
+import { getPropertyBySlug, getSimilarProperties, getNeighborhoodBySlug, getFeaturedLaunches } from '@/lib/queries';
 import { formatPrice, getDisplayTitle } from '@/lib/format';
 import PropertyGallery from '@/components/PropertyGallery';
 import ContactForm from '@/components/ContactForm';
@@ -10,6 +10,7 @@ import PropertyCard from '@/components/PropertyCard';
 import { Bed, Bath, Car, Maximize, MapPin } from 'lucide-react';
 import AmenitiesList from '@/components/AmenitiesList';
 import PropertyMapWrapper from '@/components/PropertyMapWrapper';
+import LaunchMiniBanner from '@/components/LaunchMiniBanner';
 
 export const revalidate = 3600;
 
@@ -63,7 +64,10 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     notFound();
   }
 
-  const similarProperties = await getSimilarProperties(property, 3);
+  const [similarProperties, launches] = await Promise.all([
+    getSimilarProperties(property, 3),
+    getFeaturedLaunches(5),
+  ]);
   const title = getDisplayTitle(property);
   const mainPrice = property.transaction_type === 'sale' ? property.price_sale : property.price_rent;
 
@@ -327,14 +331,12 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <ContactForm propertyId={property.id} pageUrl={`/imoveis/${property.slug}`} variant="red" />
             </div>
 
-            {/* TODO: Banner carrossel de lançamentos */}
-            {/* 
-            <div className="mt-6 rounded-2xl overflow-hidden border border-gray-100">
-              <div className="aspect-[16/9] bg-gray-100 relative">
-                Carrossel de lançamentos
+            {/* Mini Banner Lançamentos */}
+            {launches && launches.length > 0 && (
+              <div className="mt-4">
+                <LaunchMiniBanner launches={launches} />
               </div>
-            </div>
-            */}
+            )}
 
           </div>
         </div>
