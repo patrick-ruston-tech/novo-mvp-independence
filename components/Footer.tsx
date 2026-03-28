@@ -11,7 +11,7 @@ export default function Footer() {
           {/* Marca */}
           <div>
             <div className="mb-4">
-              <Image src="/logo.png" alt="Independence Negócios Imobiliários" width={140} height={48} className="h-10 w-auto brightness-0 invert" />
+              <Image src="/logo.svg" alt="Independence Negócios Imobiliários" width={180} height={60} className="h-12 w-auto brightness-0 invert" />
             </div>
             <p className="text-sm text-gray-400 leading-relaxed mb-6">
               Referência em negociações imobiliárias em São José dos Campos e região. Segurança e transparência em cada contrato.

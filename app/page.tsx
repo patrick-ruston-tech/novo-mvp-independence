@@ -32,7 +32,7 @@ async function HeroSection() {
         <HeroCarousel />
         <div className="relative z-10 w-full max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16 py-12 flex flex-col lg:flex-row items-center lg:items-start gap-10">
           <div className="flex-1 text-center lg:text-left lg:pt-12">
-            <Image src="/logo.png" alt="Independence" width={160} height={54} className="h-12 w-auto brightness-0 invert mb-6" />
+            <Image src="/logo.svg" alt="Independence" width={200} height={68} className="h-14 w-auto brightness-0 invert mb-6" />
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold text-white leading-tight">
               Bom mesmo<br />
               é viver em São José!

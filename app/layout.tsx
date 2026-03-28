@@ -58,7 +58,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
               '@type': 'RealEstateAgent',
               name: 'Independence Negócios Imobiliários',
               url: 'https://independenceimoveis.com.br',
-              logo: 'https://independenceimoveis.com.br/logo.png',
+              logo: 'https://independenceimoveis.com.br/logo.svg',
               description: 'Imobiliária em São José dos Campos especializada em venda e locação de imóveis residenciais e comerciais.',
               address: {
                 '@type': 'PostalAddress',
