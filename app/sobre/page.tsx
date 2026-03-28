@@ -5,6 +5,8 @@ import { Shield, Heart, TrendingUp, Award, Rocket, Eye, Diamond } from 'lucide-r
 import TestimonialCarousel from '@/components/TestimonialCarousel';
 import { getTestimonials } from '@/lib/queries';
 
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: 'Sobre Nós | Independence',
   description: 'Conheça a Independence Negócios Imobiliários. Mais de 24 anos transformando o mercado imobiliário de São José dos Campos.',
