@@ -59,6 +59,7 @@ function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setP
         { label: 'Até R$ 3.500', value: '3500' },
         { label: 'Até R$ 5.000', value: '5000' },
         { label: 'Até R$ 10.000', value: '10000' },
+        { label: 'Acima de R$ 10.000', value: '10001' },
       ];
 
   return (
@@ -205,6 +206,8 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
     if (filterPrecoMax) {
       if (filterPrecoMax === '15000001') {
         params.set('preco_min', '15000000');
+      } else if (filterPrecoMax === '10001') {
+        params.set('preco_min', '10000');
       } else {
         params.set('preco_max', filterPrecoMax);
       }

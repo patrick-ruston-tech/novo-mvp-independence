@@ -182,9 +182,11 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
       {/* Faixa de Preço */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-          <DollarSign className="w-3.5 h-3.5" aria-hidden="true" /> Faixa de Preço
+          <DollarSign className="w-3.5 h-3.5" /> Faixa de Preço
         </label>
-        <div className="space-y-4">
+
+        {/* Desktop: Sliders */}
+        <div className="hidden lg:block space-y-4">
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-500">Mín: <strong className="text-black">{formatPriceBR(priceMin)}</strong></span>
             <span className="text-gray-500">Máx: <strong className="text-black">{formatPriceBR(priceMax)}</strong></span>
@@ -215,6 +217,78 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
               className="w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer accent-brand-red"
             />
           </div>
+        </div>
+
+        {/* Mobile: Price range pills */}
+        <div className="lg:hidden">
+          {transactionType === 'sale' ? (
+            <div className="flex flex-col gap-2">
+              {[
+                { label: 'Até R$ 500mil', min: 0, max: 500000 },
+                { label: 'R$ 500mil - 1M', min: 500000, max: 1000000 },
+                { label: 'R$ 1M - 2M', min: 1000000, max: 2000000 },
+                { label: 'R$ 2M - 5M', min: 2000000, max: 5000000 },
+                { label: 'R$ 5M - 10M', min: 5000000, max: 10000000 },
+                { label: 'Acima de R$ 10M', min: 10000000, max: maxPrice },
+              ].map((range) => {
+                const isActive = priceMin === range.min && priceMax === range.max;
+                return (
+                  <button
+                    key={range.label}
+                    onClick={() => {
+                      if (isActive) {
+                        setPriceMin(0);
+                        setPriceMax(maxPrice);
+                      } else {
+                        setPriceMin(range.min);
+                        setPriceMax(range.max);
+                      }
+                    }}
+                    className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
+                      isActive
+                        ? 'bg-brand-red text-white'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    {range.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {[
+                { label: 'Até R$ 1.500', min: 0, max: 1500 },
+                { label: 'R$ 1.500 - 3.000', min: 1500, max: 3000 },
+                { label: 'R$ 3.000 - 5.000', min: 3000, max: 5000 },
+                { label: 'R$ 5.000 - 8.000', min: 5000, max: 8000 },
+                { label: 'Acima de R$ 8.000', min: 8000, max: maxPrice },
+              ].map((range) => {
+                const isActive = priceMin === range.min && priceMax === range.max;
+                return (
+                  <button
+                    key={range.label}
+                    onClick={() => {
+                      if (isActive) {
+                        setPriceMin(0);
+                        setPriceMax(maxPrice);
+                      } else {
+                        setPriceMin(range.min);
+                        setPriceMax(range.max);
+                      }
+                    }}
+                    className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
+                      isActive
+                        ? 'bg-brand-red text-white'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    {range.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
