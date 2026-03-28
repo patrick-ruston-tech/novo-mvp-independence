@@ -505,3 +505,24 @@ export async function getDiscoverProperties(): Promise<any[]> {
   }
   return data ?? [];
 }
+
+/**
+ * Busca depoimentos para exibir no site
+ */
+export async function getTestimonials(location: 'home' | 'about' | 'all' = 'all'): Promise<any[]> {
+  const supabase = createServerClient();
+  let query = supabase
+    .from('testimonials')
+    .select('id, name, text, stars, date_label, show_on_home, show_on_about')
+    .order('created_at', { ascending: false });
+
+  if (location === 'home') query = query.eq('show_on_home', true);
+  if (location === 'about') query = query.eq('show_on_about', true);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('getTestimonials error:', error);
+    return [];
+  }
+  return data ?? [];
+}
