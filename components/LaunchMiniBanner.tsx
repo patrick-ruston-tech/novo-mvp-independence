@@ -14,7 +14,6 @@ interface Launch {
   construction_stage?: string;
   cover_image?: string;
   images?: any[];
-  mini_banner?: string;
 }
 
 function formatPrice(value: number): string {
@@ -35,9 +34,9 @@ export default function LaunchMiniBanner({ launches }: { launches: Launch[] }) {
   if (!launches || launches.length === 0) return null;
 
   const launch = launches[current];
-  const imageUrl = launch.mini_banner
-    || (launch.images && launch.images.length > 0 ? (typeof launch.images[0] === 'string' ? launch.images[0] : launch.images[0].url) : null)
-    || launch.cover_image;
+  const imageUrl = (launch.images && launch.images.length > 0
+    ? (typeof launch.images[0] === 'string' ? launch.images[0] : launch.images[0].url)
+    : null) || launch.cover_image;
 
   return (
     <div className="rounded-2xl overflow-hidden bg-[#1A2B3C] relative">
