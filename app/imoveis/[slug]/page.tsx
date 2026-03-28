@@ -173,7 +173,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         }).replace(/<\/script/gi, '<\\/script'),
       }}
     />
-    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-0 w-full">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16 w-full">
 
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-400 mb-4 flex items-center gap-2">
