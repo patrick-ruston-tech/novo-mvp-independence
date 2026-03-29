@@ -119,7 +119,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
       {/* Content */}
       <article className="max-w-3xl mx-auto px-4 sm:px-6 pb-12">
-        <PortableTextRenderer content={post.body} />
+        <PortableTextRenderer content={post.body || []} />
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
