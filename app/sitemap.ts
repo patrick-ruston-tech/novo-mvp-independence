@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { createServerClient } from '@/lib/supabase/server';
+import { getAllPostSlugs } from '@/lib/blog-queries';
 
 const BASE_URL = 'https://independenceimoveis.com.br';
 
@@ -66,22 +67,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ]);
 
-  // Blog posts
-  const blogSlugs = [
-    'mercado-imobiliario-sjc-2024',
-    '5-dicas-decorar-apartamento',
-    'bairros-mais-valorizaram-sjc',
-    'vale-pena-investir-imoveis-planta',
-    'vantagens-morar-condominio-fechado',
-    'aluguel-ou-financiamento',
-  ];
-
-  const blogPages = blogSlugs.map((slug) => ({
-    url: `${BASE_URL}/blog/${slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'monthly' as const,
-    priority: 0.5,
-  }));
+  // Blog posts from Sanity
+  let blogPages: any[] = [];
+  try {
+    const blogSlugs = await getAllPostSlugs();
+    blogPages = blogSlugs.map((slug) => ({
+      url: `${BASE_URL}/blog/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    }));
+  } catch (e) {
+    console.error('Sitemap: Failed to fetch blog posts', e);
+  }
 
   return [...staticPages, ...launchPages, ...neighborhoodPages, ...blogPages, ...propertyPages];
 }

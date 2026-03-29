@@ -2,76 +2,58 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getPostBySlug, getRelatedPosts } from '@/lib/blog-data';
+import { getPostBySlug, getRelatedPosts, getAllPostSlugs } from '@/lib/blog-queries';
+import { urlFor } from '@/lib/sanity';
+import PortableTextRenderer from '@/components/PortableTextRenderer';
 import { ArrowRight, Share2, Bookmark } from 'lucide-react';
+
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const slugs = await getAllPostSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
   const resolvedParams = await params;
-  const post = getPostBySlug(resolvedParams.slug);
+  const post = await getPostBySlug(resolvedParams.slug);
   if (!post) return { title: 'Post não encontrado' };
+
+  const imageUrl = post.coverImage ? urlFor(post.coverImage).width(1200).height(630).url() : '/hero/hero-1.jpg';
+
   return {
-    title: `${post.title} | Blog | Independence`,
+    title: post.title,
     description: post.excerpt,
     alternates: { canonical: `https://independenceimoveis.com.br/blog/${resolvedParams.slug}` },
     openGraph: {
       title: post.title,
       description: post.excerpt,
       type: 'article',
-      images: [{ url: post.coverImage }],
+      images: [{ url: imageUrl, width: 1200, height: 630 }],
+      publishedTime: post.publishedAt,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+      images: [imageUrl],
     },
   };
 }
 
-function renderContent(content: string) {
-  const blocks = content.split('\n\n');
-  return blocks.map((block, idx) => {
-    const trimmed = block.trim();
-
-    if (trimmed.startsWith('## ')) {
-      return (
-        <h2 key={idx} className="text-2xl font-heading font-bold text-black mt-10 mb-4">
-          {trimmed.replace('## ', '')}
-        </h2>
-      );
-    }
-
-    if (trimmed.startsWith('> ')) {
-      const lines = trimmed.split('\n').map(l => l.replace(/^> ?/, ''));
-      const quote = lines[0];
-      const attribution = lines[1] ? lines[1].replace('— ', '') : null;
-      return (
-        <blockquote key={idx} className="my-8 bg-gray-50 rounded-2xl p-6 md:p-8 border-l-4 border-[#EC5B13]">
-          <p className="text-lg md:text-xl font-heading font-bold text-black italic leading-relaxed mb-3">
-            "{quote}"
-          </p>
-          {attribution && (
-            <cite className="text-sm text-[#EC5B13] font-medium not-italic">— {attribution}</cite>
-          )}
-        </blockquote>
-      );
-    }
-
-    if (trimmed) {
-      return (
-        <p key={idx} className="text-gray-600 leading-relaxed mb-4">
-          {trimmed}
-        </p>
-      );
-    }
-
-    return null;
-  });
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const post = getPostBySlug(resolvedParams.slug);
+  const post = await getPostBySlug(resolvedParams.slug);
 
   if (!post) notFound();
 
-  const relatedPosts = getRelatedPosts(post.slug, 3);
+  const relatedPosts = await getRelatedPosts(post.slug, 3);
 
   return (
     <div className="w-full">
@@ -83,7 +65,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <span>·</span>
           <Link href="/blog" className="hover:text-black transition-colors">Blog</Link>
           <span>·</span>
-          <span className="text-gray-600">{post.category}</span>
+          <span className="text-gray-600">{post.category?.title}</span>
         </nav>
 
         <h1 className="text-3xl md:text-5xl font-heading font-bold text-black leading-tight mb-4">
@@ -96,12 +78,16 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         {/* Author + Actions */}
         <div className="flex items-center justify-between pb-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red font-bold text-sm">
-              {post.author.name.charAt(0)}
+            <div className="w-10 h-10 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red font-bold text-sm overflow-hidden">
+              {post.author?.image ? (
+                <Image src={urlFor(post.author.image).width(80).height(80).url()} alt={post.author.name} width={40} height={40} className="object-cover" />
+              ) : (
+                post.author?.name?.charAt(0) || 'E'
+              )}
             </div>
             <div>
-              <div className="text-sm font-semibold text-black">{post.author.name}</div>
-              <div className="text-xs text-gray-400">{post.publishedAt} · {post.readTime}</div>
+              <div className="text-sm font-semibold text-black">{post.author?.name}</div>
+              <div className="text-xs text-gray-400">{formatDate(post.publishedAt)} · {post.readTime || '5 min de leitura'}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -116,41 +102,42 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       </div>
 
       {/* Cover Image */}
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 my-8">
-        <div className="aspect-[21/9] relative rounded-2xl overflow-hidden">
-          <Image
-            src={post.coverImage}
-            alt={post.title}
-            fill
-            className="object-cover"
-            sizes="100vw"
-            priority
-          />
+      {post.coverImage && (
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 my-8">
+          <div className="aspect-[21/9] relative rounded-2xl overflow-hidden">
+            <Image
+              src={urlFor(post.coverImage).width(1920).height(800).url()}
+              alt={post.title}
+              fill
+              className="object-cover"
+              sizes="100vw"
+              priority
+            />
+          </div>
         </div>
-        <p className="text-xs text-gray-400 text-center mt-3 italic">
-          Foto: Editorial Team
-        </p>
-      </div>
+      )}
 
       {/* Content */}
       <article className="max-w-3xl mx-auto px-4 sm:px-6 pb-12">
-        {renderContent(post.content)}
+        <PortableTextRenderer content={post.body} />
 
         {/* Tags */}
-        <div className="flex flex-wrap gap-2 mt-10 pt-8 border-t border-gray-100">
-          {post.tags.map((tag) => (
-            <span
-              key={tag}
-              className="px-4 py-2 border border-gray-200 rounded-full text-sm text-gray-500 hover:border-[#EC5B13] hover:text-[#EC5B13] transition-colors cursor-pointer"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+        {post.tags && post.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-10 pt-8 border-t border-gray-100">
+            {post.tags.map((tag) => (
+              <span
+                key={tag}
+                className="px-4 py-2 border border-gray-200 rounded-full text-sm text-gray-500 hover:border-[#EC5B13] hover:text-[#EC5B13] transition-colors cursor-pointer"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </article>
 
       {/* Newsletter CTA */}
-      <div className="px-4 sm:px-6 lg:px-[200px] pb-12 w-full">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-12 w-full">
         <section className="relative overflow-hidden rounded-3xl bg-brand-red py-10 px-8 sm:px-12">
           <div className="max-w-3xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
@@ -158,7 +145,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 Fique por dentro do mercado.
               </h2>
               <p className="text-white/70 text-sm mt-1">
-                Receba mensalmente nossa curadoria exclusiva sobre arquitetura, design e investimentos imobiliários direto no seu e-mail.
+                Receba mensalmente nossa curadoria exclusiva sobre investimentos imobiliários.
               </p>
             </div>
             <div className="flex flex-col gap-2 min-w-[280px]">
@@ -170,9 +157,6 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               <button className="bg-white text-brand-red font-semibold px-6 py-3 rounded-xl text-sm hover:bg-gray-100 transition-colors border border-white">
                 Inscrever-se na Newsletter
               </button>
-              <p className="text-[10px] text-white/40 text-center uppercase tracking-wider">
-                Respeitamos sua privacidade. Cancele a qualquer momento.
-              </p>
             </div>
           </div>
         </section>
@@ -189,17 +173,21 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {relatedPosts.map((related) => (
-              <Link key={related.slug} href={`/blog/${related.slug}`} className="group block">
+              <Link key={related._id} href={`/blog/${related.slug}`} className="group block">
                 <div className="aspect-[4/3] relative overflow-hidden rounded-2xl bg-gray-100 mb-4">
-                  <Image
-                    src={related.coverImage}
-                    alt={related.title}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
+                  {related.coverImage && (
+                    <Image
+                      src={urlFor(related.coverImage).width(600).height(450).url()}
+                      alt={related.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="33vw"
+                    />
+                  )}
                 </div>
-                <div className="text-xs text-[#EC5B13] font-bold uppercase tracking-wider mb-2">{related.category}</div>
+                <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: related.category?.color || '#EC5B13' }}>
+                  {related.category?.title}
+                </div>
                 <h3 className="text-base font-heading font-bold text-black group-hover:text-[#EC5B13] transition-colors leading-snug">
                   {related.title}
                 </h3>
