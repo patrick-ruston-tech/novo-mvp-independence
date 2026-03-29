@@ -1,164 +1,235 @@
-// ============================================================
-// GoHighLevel API Client
-// Creates contacts with tags — GHL workflows handle the rest
-// ============================================================
+const GHL_API_KEY = process.env.GHL_API_KEY || '';
+const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID || '';
+const GHL_BASE_URL = 'https://services.leadconnectorhq.com';
 
-const GHL_API_URL = 'https://services.leadconnectorhq.com';
+// Pipeline IDs
+const PIPELINE_PRE_VENDA = 'd232xPcFo2xoOVEH79C1';
+const STAGE_ENTRADA = 'c359cbe6-35c6-41ff-afef-04c967b6705a';
 
-interface GHLContactPayload {
-  firstName: string;
-  lastName?: string;
-  email?: string;
-  phone: string;
-  locationId: string;
-  source: string;
-  tags: string[];
-  customFields: { key: string; field_value: string }[];
+// Custom Objects
+const CUSTOM_OBJECT_KEY = 'custom_objects.imoveis';
+const CUSTOM_OBJECT_ID = '69c58c5fb863727588309bd6';
+const ASSOCIATION_ID = '69c9744f9066949419d6abca';
+
+interface GHLHeaders {
+  [key: string]: string;
 }
 
-interface GHLResponse {
-  success: boolean;
-  contactId?: string;
-  error?: string;
+function getHeaders(): GHLHeaders {
+  return {
+    'Authorization': `Bearer ${GHL_API_KEY}`,
+    'Content-Type': 'application/json',
+    'Version': '2021-07-28',
+  };
 }
 
 /**
- * Cria ou atualiza um contato no GoHighLevel.
- * Usa a API v2 com Location API Key.
+ * Cria ou atualiza contato no GHL
  */
-async function createOrUpdateContact(
-  payload: GHLContactPayload
-): Promise<GHLResponse> {
-  const apiKey = process.env.GHL_API_KEY;
-
-  if (!apiKey) {
-    console.warn('GHL_API_KEY not configured — skipping GHL sync');
-    return { success: false, error: 'API key not configured' };
-  }
-
+export async function createOrUpdateContact(data: {
+  name: string;
+  email?: string;
+  phone?: string;
+  tags?: string[];
+  customFields?: { key: string; value: string }[];
+}): Promise<{ id: string } | null> {
   try {
-    const response = await fetch(`${GHL_API_URL}/contacts/upsert`, {
+    const nameParts = data.name.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    const body: any = {
+      locationId: GHL_LOCATION_ID,
+      firstName,
+      lastName,
+      name: data.name,
+    };
+
+    if (data.email) body.email = data.email;
+    if (data.phone) body.phone = data.phone;
+    if (data.tags) body.tags = data.tags;
+
+    if (data.customFields && data.customFields.length > 0) {
+      body.customFields = data.customFields.map(cf => ({
+        key: cf.key,
+        field_value: cf.value,
+      }));
+    }
+
+    const response = await fetch(`${GHL_BASE_URL}/contacts/upsert`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'Version': '2021-07-28',
-      },
-      body: JSON.stringify(payload),
+      headers: getHeaders(),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('GHL API error:', response.status, errorText);
-      return { success: false, error: `GHL API ${response.status}` };
+      console.error('GHL createContact error:', response.status, errorText);
+      return null;
     }
 
-    const data = await response.json();
-    return {
-      success: true,
-      contactId: data.contact?.id || data.id,
-    };
+    const result = await response.json();
+    return { id: result.contact?.id || result.id };
   } catch (error) {
-    console.error('GHL connection error:', error);
-    return { success: false, error: 'Connection failed' };
+    console.error('GHL createContact exception:', error);
+    return null;
   }
 }
 
 /**
- * Cria contato no GHL a partir de um lead do site (formulário de contato no imóvel).
- * Tag: lead-imovel
- * GHL Workflow: detecta tag → cria oportunidade no pipeline Atendimento → estágio Novo
+ * Cria opportunity no pipeline de Pré-venda
  */
-export async function syncLeadToGHL(lead: {
+export async function createOpportunity(data: {
+  contactId: string;
+  name: string;
+  pipelineId?: string;
+  stageId?: string;
+}): Promise<{ id: string } | null> {
+  try {
+    const response = await fetch(`${GHL_BASE_URL}/opportunities/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        locationId: GHL_LOCATION_ID,
+        pipelineId: data.pipelineId || PIPELINE_PRE_VENDA,
+        pipelineStageId: data.stageId || STAGE_ENTRADA,
+        contactId: data.contactId,
+        name: data.name,
+        status: 'open',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('GHL createOpportunity error:', response.status, errorText);
+      return null;
+    }
+
+    const result = await response.json();
+    return { id: result.opportunity?.id || result.id };
+  } catch (error) {
+    console.error('GHL createOpportunity exception:', error);
+    return null;
+  }
+}
+
+/**
+ * Busca Custom Object (Imóvel) pelo código
+ */
+export async function findPropertyObject(codigo: string): Promise<{ id: string } | null> {
+  try {
+    const response = await fetch(
+      `${GHL_BASE_URL}/custom-objects/${CUSTOM_OBJECT_ID}/records/search`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        locationId: GHL_LOCATION_ID,
+        filters: [{
+          field: 'codigo',
+          operator: 'eq',
+          value: codigo,
+        }],
+        limit: 1,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('GHL findPropertyObject error:', response.status, errorText);
+      return null;
+    }
+
+    const result = await response.json();
+    const records = result.records || result.data || [];
+    if (records.length > 0) {
+      return { id: records[0].id };
+    }
+    return null;
+  } catch (error) {
+    console.error('GHL findPropertyObject exception:', error);
+    return null;
+  }
+}
+
+/**
+ * Cria association entre contato e imóvel (Custom Object)
+ */
+export async function associateContactToProperty(contactId: string, propertyObjectId: string): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `${GHL_BASE_URL}/associations/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        locationId: GHL_LOCATION_ID,
+        associationId: ASSOCIATION_ID,
+        firstRecordId: contactId,
+        secondRecordId: propertyObjectId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('GHL associate error:', response.status, errorText);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('GHL associate exception:', error);
+    return false;
+  }
+}
+
+/**
+ * Fluxo completo: cria contato + opportunity + vincula imóvel
+ */
+export async function processLeadFromSite(data: {
   name: string;
   email?: string;
-  phone: string;
+  phone?: string;
   propertyCode?: string;
+  source: 'lead-imovel' | 'lead-anunciar';
   pageUrl?: string;
-}): Promise<GHLResponse> {
-  const locationId = process.env.GHL_LOCATION_ID;
-  if (!locationId) return { success: false, error: 'Location ID not configured' };
+}): Promise<{ contactId: string | null; opportunityId: string | null; associated: boolean }> {
+  const result = { contactId: null as string | null, opportunityId: null as string | null, associated: false };
 
-  const nameParts = lead.name.trim().split(' ');
-  const firstName = nameParts[0] || lead.name;
-  const lastName = nameParts.slice(1).join(' ') || '';
-
-  const customFields: { key: string; field_value: string }[] = [];
-
-  if (lead.propertyCode) {
-    customFields.push({
-      key: 'contact.codigo_do_imovel',
-      field_value: lead.propertyCode,
-    });
-  }
-
-  if (lead.pageUrl) {
-    customFields.push({
-      key: 'contact.origem',
-      field_value: lead.pageUrl,
-    });
-  }
-
-  return createOrUpdateContact({
-    firstName,
-    lastName,
-    email: lead.email,
-    phone: lead.phone,
-    locationId,
-    source: 'Website - Imóvel',
-    tags: ['lead-imovel'],
-    customFields,
+  // 1. Criar/atualizar contato
+  const contact = await createOrUpdateContact({
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    tags: [data.source, 'site'],
+    customFields: [
+      ...(data.propertyCode ? [{ key: 'codigo_do_imovel', value: data.propertyCode }] : []),
+      { key: 'origem', value: data.pageUrl || 'site' },
+    ],
   });
-}
 
-/**
- * Cria contato no GHL a partir do formulário Anunciar.
- * Tag: lead-anunciar
- * GHL Workflow: detecta tag → cria oportunidade no pipeline Captação → estágio Pendente
- */
-export async function syncSubmissionToGHL(submission: {
-  ownerName: string;
-  ownerEmail?: string;
-  ownerPhone: string;
-  propertyType?: string;
-  neighborhood?: string;
-  city?: string;
-  priceEstimate?: string;
-}): Promise<GHLResponse> {
-  const locationId = process.env.GHL_LOCATION_ID;
-  if (!locationId) return { success: false, error: 'Location ID not configured' };
+  if (!contact) return result;
+  result.contactId = contact.id;
 
-  const nameParts = submission.ownerName.trim().split(' ');
-  const firstName = nameParts[0] || submission.ownerName;
-  const lastName = nameParts.slice(1).join(' ') || '';
+  // 2. Criar opportunity no pipeline
+  const oppName = data.propertyCode
+    ? `${data.name} - ${data.propertyCode}`
+    : `${data.name} - ${data.source}`;
 
-  // Monta resumo para o campo origem
-  const resumo = [
-    submission.propertyType,
-    submission.neighborhood,
-    submission.city,
-    submission.priceEstimate ? `R$ ${submission.priceEstimate}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const opportunity = await createOpportunity({
+    contactId: contact.id,
+    name: oppName,
+  });
 
-  const customFields: { key: string; field_value: string }[] = [];
-
-  if (resumo) {
-    customFields.push({
-      key: 'contact.origem',
-      field_value: `Anunciar: ${resumo}`,
-    });
+  if (opportunity) {
+    result.opportunityId = opportunity.id;
   }
 
-  return createOrUpdateContact({
-    firstName,
-    lastName,
-    email: submission.ownerEmail,
-    phone: submission.ownerPhone,
-    locationId,
-    source: 'Website - Anunciar',
-    tags: ['lead-anunciar'],
-    customFields,
-  });
+  // 3. Vincular ao imóvel se tiver código
+  if (data.propertyCode) {
+    const propertyObject = await findPropertyObject(data.propertyCode);
+    if (propertyObject) {
+      result.associated = await associateContactToProperty(contact.id, propertyObject.id);
+    }
+  }
+
+  return result;
 }

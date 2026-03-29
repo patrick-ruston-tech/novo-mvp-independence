@@ -1,7 +1,7 @@
 'use server';
 
 import { createLead, createPropertySubmission } from '@/lib/queries';
-import { syncLeadToGHL, syncSubmissionToGHL } from '@/lib/ghl';
+import { processLeadFromSite } from '@/lib/ghl';
 import type { Lead, PropertySubmission } from '@/types/property';
 import { createServerClient } from '@/lib/supabase/server';
 
@@ -47,17 +47,18 @@ export async function submitLeadAction(formData: FormData) {
     }
   }
 
-  // 3. Sync com GHL (await para garantir que salva o contact_id)
+  // 3. GHL sync completo: contato + opportunity + association
   try {
-    const ghlResult = await syncLeadToGHL({
+    const ghlResult = await processLeadFromSite({
       name: lead.name,
       email: lead.email,
       phone: lead.phone,
       propertyCode,
-      pageUrl: lead.page_url,
+      source: 'lead-imovel',
+      pageUrl: lead.page_url || '',
     });
 
-    if (ghlResult.success && ghlResult.contactId) {
+    if (ghlResult.contactId) {
       const supabase = createServerClient();
 
       // Busca o lead mais recente com esse telefone
@@ -70,13 +71,10 @@ export async function submitLeadAction(formData: FormData) {
         .single();
 
       if (recentLead) {
-        const { error: updateError } = await supabase
+        await supabase
           .from('leads')
           .update({ ghl_contact_id: ghlResult.contactId })
           .eq('id', recentLead.id);
-
-        if (updateError) console.error('Failed to save ghl_contact_id:', updateError);
-        else console.log('Saved ghl_contact_id for lead:', recentLead.id);
       }
     }
   } catch (e) {
@@ -131,19 +129,17 @@ export async function submitPropertyAction(formData: FormData) {
   const result = await createPropertySubmission(submission);
   if (!result.success) return result;
 
-  // 2. Sync com GHL
+  // 2. GHL sync completo: contato + opportunity + association
   try {
-    const ghlResult = await syncSubmissionToGHL({
-      ownerName: submission.owner_name,
-      ownerEmail: submission.owner_email,
-      ownerPhone: submission.owner_phone,
-      propertyType: submission.property_type,
-      neighborhood: submission.neighborhood,
-      city: submission.city,
-      priceEstimate: submission.price_estimate?.toString(),
+    const ghlResult = await processLeadFromSite({
+      name: submission.owner_name,
+      email: submission.owner_email,
+      phone: submission.owner_phone,
+      source: 'lead-anunciar',
+      pageUrl: '/anunciar',
     });
 
-    if (ghlResult.success && ghlResult.contactId) {
+    if (ghlResult.contactId) {
       const supabase = createServerClient();
       const { data: recentSub } = await supabase
         .from('property_submissions')
