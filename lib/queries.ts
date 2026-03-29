@@ -82,6 +82,9 @@ export async function getProperties(
   if (filters.zona) {
     query = query.eq('zone', filters.zona);
   }
+  if (filters.codigo) {
+    query = query.ilike('external_id', `%${filters.codigo}%`);
+  }
 
   // Filtro de preço (usa price_sale ou price_rent conforme o tipo)
   const priceCol =

@@ -201,8 +201,8 @@ export async function processLeadFromSite(data: {
     phone: data.phone,
     tags: [data.source, 'site'],
     customFields: [
-      ...(data.propertyCode ? [{ key: 'codigo_do_imovel', value: data.propertyCode }] : []),
-      { key: 'origem', value: data.pageUrl || 'site' },
+      ...(data.propertyCode ? [{ key: 'prN78aSY5MNiwm2pdOFl', value: data.propertyCode }] : []),
+      { key: 'fRs2gChyO0PfLfsTZopl', value: data.pageUrl || 'site' },
     ],
   });
 

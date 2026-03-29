@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { getProperties, getNeighborhoods, getZones } from '@/lib/queries';
 import PropertyCard from '@/components/PropertyCard';
@@ -22,6 +23,11 @@ async function PropertyGrid({
   city?: string;
 }) {
   const { data: properties, total, total_pages } = await getProperties(filters);
+
+  // Se buscou por código e encontrou exatamente 1 resultado, redireciona
+  if (filters.codigo && properties.length === 1) {
+    redirect(`/imoveis/${properties[0].slug}`);
+  }
 
   return (
     <>
@@ -125,6 +131,7 @@ export default async function AlugarPage({
   const city = resolvedParams.cidade as string | undefined;
   const comodidades = resolvedParams.comodidades as string | undefined;
   const zona = resolvedParams.zona as string | undefined;
+  const codigo = resolvedParams.codigo as string | undefined;
 
   const filters: PropertyFiltersType = {
     transaction_type: 'rent',
@@ -139,6 +146,7 @@ export default async function AlugarPage({
     city,
     comodidades,
     zona,
+    codigo,
   };
 
   return (

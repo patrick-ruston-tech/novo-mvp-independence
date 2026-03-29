@@ -213,10 +213,10 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
       }
     }
 
-    const codeMatch = searchQuery.toUpperCase().match(/^[A-Z]{2}\d+/);
+    // Detecta código de imóvel (ex: AP3593_INDEP, CA2532_INDEP, TE1118)
+    const codeMatch = searchQuery.toUpperCase().match(/^[A-Z]{2}\d{3,}/);
     if (codeMatch) {
-      params.set('codigo', searchQuery.toUpperCase());
-      router.push(`/${mode}?${params.toString()}`);
+      router.push(`/${mode}?codigo=${encodeURIComponent(searchQuery.trim())}`);
       return;
     }
 
