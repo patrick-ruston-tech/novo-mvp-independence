@@ -127,7 +127,7 @@ export async function findPropertyObject(codigo: string): Promise<{ id: string }
         pageLimit: 1,
         filters: [
           {
-            field: 'codigo',
+            field: 'i9Yp5ys5O412bGPkr9i7',
             operator: 'eq',
             value: codigo,
           }
