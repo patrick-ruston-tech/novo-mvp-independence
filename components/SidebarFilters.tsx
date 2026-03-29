@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { SlidersHorizontal, X, Check, MapPin, Home, DollarSign, BedDouble, Bath, Car, Sparkles, Building2 } from 'lucide-react';
+import { SlidersHorizontal, X, Check, MapPin, Home, DollarSign, BedDouble, Bath, Car, Sparkles, Building2, Globe } from 'lucide-react';
 
 const CITIES = [
   { label: 'Todas as cidades', value: '' },
@@ -28,10 +28,11 @@ const AMENITIES = ['Piscina', 'Churrasqueira', 'Armários Planejados', 'Varanda'
 
 interface SidebarFiltersProps {
   transactionType: 'sale' | 'rent';
-  neighborhoods?: { name: string; slug: string; city: string; property_count: number }[];
+  neighborhoods?: { name: string; slug: string; city: string; property_count: number; zone_id?: string }[];
+  zones?: { id: string; name: string; slug: string }[];
 }
 
-export default function SidebarFilters({ transactionType, neighborhoods = [] }: SidebarFiltersProps) {
+export default function SidebarFilters({ transactionType, neighborhoods = [], zones = [] }: SidebarFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -47,6 +48,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
     searchParams.get('comodidades')?.split(',').filter(Boolean) || []
   );
   const [selectedNeighborhood, setSelectedNeighborhood] = useState(searchParams.get('bairro') || '');
+  const [selectedZone, setSelectedZone] = useState(searchParams.get('zona') || '');
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const maxPrice = transactionType === 'sale' ? 20000000 : 15000;
@@ -69,6 +71,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
     if (priceMin > 0) params.set('preco_min', String(priceMin));
     if (priceMax < maxPrice) params.set('preco_max', String(priceMax));
     if (selectedNeighborhood) params.set('bairro', selectedNeighborhood);
+    if (selectedZone) params.set('zona', selectedZone);
     if (selectedAmenities.length > 0) params.set('comodidades', selectedAmenities.join(','));
 
     params.delete('pagina');
@@ -87,11 +90,12 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
     setPriceMax(maxPrice);
     setSelectedAmenities([]);
     setSelectedNeighborhood('');
+    setSelectedZone('');
     router.push(pathname);
     setMobileOpen(false);
   }
 
-  const hasFilters = selectedCity || selectedType || selectedBedrooms || selectedSuites || selectedGarages || priceMin > 0 || priceMax < maxPrice || selectedNeighborhood || selectedAmenities.length > 0;
+  const hasFilters = selectedCity || selectedType || selectedBedrooms || selectedSuites || selectedGarages || priceMin > 0 || priceMax < maxPrice || selectedNeighborhood || selectedZone || selectedAmenities.length > 0;
 
   const togglePill = (value: string, current: string, setter: (v: string) => void) => {
     setter(current === value ? '' : value);
@@ -117,6 +121,25 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
           </button>
         )}
       </div>
+
+      {/* Zona */}
+      {zones.length > 0 && (
+        <div>
+          <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
+            <Globe className="w-3.5 h-3.5" /> Zona / Região
+          </label>
+          <select
+            value={selectedZone}
+            onChange={(e) => setSelectedZone(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-black bg-white focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none"
+          >
+            <option value="">Todas as zonas</option>
+            {zones.map(z => (
+              <option key={z.id} value={z.name}>{z.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Localização */}
       <div>
@@ -146,7 +169,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [] }: 
         >
           <option value="">Todos os bairros</option>
           {neighborhoods
-            .filter(b => !selectedCity || b.city === selectedCity)
+            .filter(b => (!selectedCity || b.city === selectedCity) && (!selectedZone || zones.find(z => z.id === b.zone_id)?.name === selectedZone))
             .sort((a, b) => b.property_count - a.property_count)
             .map(b => (
               <option key={b.slug} value={b.name}>

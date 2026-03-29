@@ -79,6 +79,9 @@ export async function getProperties(
   if (city) {
     query = query.eq('city', city);
   }
+  if (filters.zona) {
+    query = query.eq('zone', filters.zona);
+  }
 
   // Filtro de preço (usa price_sale ou price_rent conforme o tipo)
   const priceCol =
@@ -543,5 +546,16 @@ export async function getTeamMembers(): Promise<any[]> {
     console.error('getTeamMembers error:', error);
     return [];
   }
+  return data ?? [];
+}
+
+export async function getZones(): Promise<any[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from('zones')
+    .select('id, name, slug')
+    .eq('is_active', true)
+    .order('name');
+  if (error) return [];
   return data ?? [];
 }
