@@ -158,9 +158,9 @@ export async function associateContactToProperty(contactId: string, propertyObje
         locationId: GHL_LOCATION_ID,
         key: 'interessado_em_leads_interessados',
         firstObjectKey: 'contact',
-        firstObjectRecordId: contactId,
+        firstRecordId: contactId,
         secondObjectKey: 'custom_objects.imoveis',
-        secondObjectRecordId: propertyObjectId,
+        secondRecordId: propertyObjectId,
       }),
     });
 
