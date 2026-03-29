@@ -123,9 +123,15 @@ export async function findPropertyObject(codigo: string): Promise<{ id: string }
       headers: getHeaders(),
       body: JSON.stringify({
         locationId: GHL_LOCATION_ID,
-        searchKey: 'codigo',
-        searchValue: codigo,
-        limit: 1,
+        page: 1,
+        pageLimit: 1,
+        filters: [
+          {
+            field: 'codigo',
+            operator: 'eq',
+            value: codigo,
+          }
+        ],
       }),
     });
 
