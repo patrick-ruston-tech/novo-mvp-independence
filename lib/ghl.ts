@@ -151,12 +151,12 @@ export async function findPropertyObject(codigo: string): Promise<{ id: string }
 export async function associateContactToProperty(contactId: string, propertyObjectId: string): Promise<boolean> {
   try {
     const response = await fetch(
-      `${GHL_BASE_URL}/associations/`, {
+      `${GHL_BASE_URL}/associations/relations`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
         locationId: GHL_LOCATION_ID,
-        key: 'interessado_em_leads_interessados',
+        associationKey: 'interessado_em_leads_interessados',
         firstObjectKey: 'contact',
         firstRecordId: contactId,
         secondObjectKey: 'custom_objects.imoveis',
