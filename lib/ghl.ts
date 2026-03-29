@@ -51,7 +51,7 @@ export async function createOrUpdateContact(data: {
 
     if (data.customFields && data.customFields.length > 0) {
       body.customFields = data.customFields.map(cf => ({
-        key: cf.key,
+        id: cf.key,
         field_value: cf.value,
       }));
     }
