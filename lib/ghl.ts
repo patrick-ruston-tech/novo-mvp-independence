@@ -118,7 +118,7 @@ export async function createOpportunity(data: {
 export async function findPropertyObject(codigo: string): Promise<{ id: string } | null> {
   try {
     const response = await fetch(
-      `${GHL_BASE_URL}/custom-objects/${CUSTOM_OBJECT_KEY}/records/search?locationId=${GHL_LOCATION_ID}`, {
+      `${GHL_BASE_URL}/objects/${CUSTOM_OBJECT_KEY}/records/search`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
@@ -132,35 +132,6 @@ export async function findPropertyObject(codigo: string): Promise<{ id: string }
     if (!response.ok) {
       const errorText = await response.text();
       console.error('GHL findPropertyObject error:', response.status, errorText);
-
-      // Fallback: try alternative endpoint format
-      const response2 = await fetch(
-        `${GHL_BASE_URL}/custom-objects/records/search?locationId=${GHL_LOCATION_ID}&objectKey=${CUSTOM_OBJECT_KEY}`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({
-          locationId: GHL_LOCATION_ID,
-          objectKey: CUSTOM_OBJECT_KEY,
-          filters: [{
-            field: 'codigo',
-            operator: 'eq',
-            value: codigo,
-          }],
-          limit: 1,
-        }),
-      });
-
-      if (!response2.ok) {
-        const errorText2 = await response2.text();
-        console.error('GHL findPropertyObject fallback error:', response2.status, errorText2);
-        return null;
-      }
-
-      const result2 = await response2.json();
-      const records2 = result2.records || result2.data || result2.customObjectRecords || [];
-      if (records2.length > 0) {
-        return { id: records2[0].id };
-      }
       return null;
     }
 
