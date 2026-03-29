@@ -8,8 +8,6 @@ const STAGE_ENTRADA = 'c359cbe6-35c6-41ff-afef-04c967b6705a';
 
 // Custom Objects
 const CUSTOM_OBJECT_KEY = 'custom_objects.imoveis';
-const ASSOCIATION_ID = '69c9744f9066949419d6abca';
-
 interface GHLHeaders {
   [key: string]: string;
 }
@@ -158,9 +156,11 @@ export async function associateContactToProperty(contactId: string, propertyObje
       headers: getHeaders(),
       body: JSON.stringify({
         locationId: GHL_LOCATION_ID,
-        associationId: ASSOCIATION_ID,
-        firstRecordId: contactId,
-        secondRecordId: propertyObjectId,
+        key: 'interessado_em_leads_interessados',
+        firstObjectKey: 'contact',
+        firstObjectRecordId: contactId,
+        secondObjectKey: 'custom_objects.imoveis',
+        secondObjectRecordId: propertyObjectId,
       }),
     });
 
