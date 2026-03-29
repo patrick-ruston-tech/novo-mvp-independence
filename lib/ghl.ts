@@ -125,13 +125,7 @@ export async function findPropertyObject(codigo: string): Promise<{ id: string }
         locationId: GHL_LOCATION_ID,
         page: 1,
         pageLimit: 1,
-        filters: [
-          {
-            field: 'custom_objects.imoveis.codigo',
-            operator: 'eq',
-            value: codigo,
-          }
-        ],
+        query: codigo,
       }),
     });
 
