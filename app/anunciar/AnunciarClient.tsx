@@ -540,6 +540,13 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
                     <Camera className="w-10 h-10 text-gray-400 mb-4" />
                     <p className="text-sm font-medium text-black">Arraste ou clique para adicionar fotos</p>
                     <p className="text-xs text-gray-400 mt-1">JPG, PNG ou WebP · Máx 15MB cada · {fotos.length}/20</p>
+                    <div className="mt-3 text-xs text-gray-400 space-y-1">
+                      <p>📸 Dicas para melhores fotos:</p>
+                      <p>• Fotos na horizontal (paisagem) ficam melhores</p>
+                      <p>• Fotografe com boa iluminação natural</p>
+                      <p>• Inclua: fachada, sala, quartos, cozinha, banheiro e área externa</p>
+                      <p>• Evite fotos escuras, desfocadas ou com objetos pessoais visíveis</p>
+                    </div>
                   </>
                 )}
                 <input
