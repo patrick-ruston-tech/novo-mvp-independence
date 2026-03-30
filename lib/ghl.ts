@@ -156,10 +156,8 @@ export async function associateContactToProperty(contactId: string, propertyObje
       headers: getHeaders(),
       body: JSON.stringify({
         locationId: GHL_LOCATION_ID,
-        associationKey: 'interessado_em_leads_interessados',
-        firstObjectKey: 'contact',
+        associationId: '69c9744f9066949419d6abca',
         firstRecordId: contactId,
-        secondObjectKey: 'custom_objects.imoveis',
         secondRecordId: propertyObjectId,
       }),
     });
