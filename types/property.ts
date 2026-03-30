@@ -154,6 +154,7 @@ export interface PropertySubmission {
   living_area?: number;
   price_estimate?: number;
   description?: string;
+  images?: string[];
 }
 
 // ---- Filters (for listing pages) ----

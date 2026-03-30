@@ -107,10 +107,19 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
     setErrorUpdate(null);
     setFieldErrors({});
 
-    // Validação Step 1
-    if (step === 1 && !finalidade) {
-      setErrorUpdate('Selecione a finalidade.');
-      return;
+    if (step === 1) {
+      if (!finalidade) { setErrorUpdate('Selecione a finalidade.'); return; }
+      if (!tipo) { setErrorUpdate('Selecione o tipo do imóvel.'); return; }
+      if (!bairro) { setErrorUpdate('Selecione o bairro.'); return; }
+    }
+
+    if (step === 2) {
+      if (!metragem) { setErrorUpdate('Informe a metragem do imóvel.'); return; }
+      if (!valorPretendido) { setErrorUpdate('Informe o valor pretendido.'); return; }
+    }
+
+    if (step === 3) {
+      if (fotos.length === 0) { setErrorUpdate('Adicione ao menos 1 foto do imóvel.'); return; }
     }
 
     setStep(prev => Math.min(prev + 1, 4));
@@ -178,6 +187,7 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
       }
       
       if (fullDescription) formData.append('description', fullDescription);
+      if (fotos.length > 0) formData.append('images', JSON.stringify(fotos));
 
       const result = await submitPropertyAction(formData);
 
@@ -189,11 +199,53 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
     });
   };
 
-  const addSimulatedPhoto = () => {
-    if (fotos.length < 20) {
-      const randomColor = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
-      setFotos([...fotos, randomColor]);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadPhotos = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    if (fotos.length + fileArray.length > 20) {
+      setErrorUpdate('Máximo 20 fotos.');
+      return;
     }
+
+    setUploading(true);
+    const newUrls: string[] = [];
+
+    for (const file of fileArray) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) continue;
+      if (file.size > 15 * 1024 * 1024) continue;
+
+      const resized = await new Promise<Blob>((resolve) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          if (width > 1920) {
+            height = Math.round((height * 1920) / width);
+            width = 1920;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.85);
+        };
+        img.src = URL.createObjectURL(file);
+      });
+
+      const formData = new FormData();
+      formData.append('file', new File([resized], file.name.replace(/\.[^/.]+$/, '.jpg'), { type: 'image/jpeg' }));
+      formData.append('folder', 'submissions');
+
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.url) newUrls.push(data.url);
+      } catch {}
+    }
+
+    setFotos([...fotos, ...newUrls]);
+    setUploading(false);
   };
 
   const removePhoto = (index: number) => {
@@ -327,8 +379,7 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
 
             <button 
               onClick={handleNext}
-              disabled={!finalidade}
-              className="w-full bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors mt-6"
+              className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3.5 rounded-xl transition-colors mt-6"
             >
               Continuar
             </button>
@@ -449,14 +500,20 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
               </div>
             </div>
 
+            {errorUpdate && (
+              <div className="p-3 bg-red-50 text-red-600 text-sm font-medium border border-red-200 rounded-xl">
+                {errorUpdate}
+              </div>
+            )}
+
             <div className="flex gap-4 pt-4">
-              <button 
+              <button
                 onClick={handlePrev}
                 className="w-1/3 border border-gray-200 text-gray-700 font-semibold py-3.5 rounded-xl hover:bg-gray-50 transition-colors"
               >
                 Voltar
               </button>
-              <button 
+              <button
                 onClick={handleNext}
                 className="w-2/3 bg-black hover:bg-gray-800 text-white font-semibold py-3.5 rounded-xl transition-colors"
               >
@@ -472,14 +529,28 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
             
             <div>
               <h3 className="font-heading font-bold text-lg text-black mb-4">Fotos do imóvel</h3>
-              <div 
-                onClick={addSimulatedPhoto}
-                className="border-2 border-dashed border-gray-200 rounded-xl p-12 sm:p-16 text-center hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer flex flex-col items-center justify-center"
-              >
-                <Camera className="w-10 h-10 text-gray-400 mb-4" />
-                <p className="text-sm font-medium text-black">Arraste ou clique para adicionar fotos</p>
-                <p className="text-xs text-gray-400 mt-1">Mínimo 5, máximo 20</p>
-              </div>
+              <label className="border-2 border-dashed border-gray-200 rounded-xl p-12 sm:p-16 text-center hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer flex flex-col items-center justify-center">
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-10 h-10 text-gray-400 mb-4 animate-spin" />
+                    <p className="text-sm font-medium text-black">Enviando fotos...</p>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-10 h-10 text-gray-400 mb-4" />
+                    <p className="text-sm font-medium text-black">Arraste ou clique para adicionar fotos</p>
+                    <p className="text-xs text-gray-400 mt-1">JPG, PNG ou WebP · Máx 15MB cada · {fotos.length}/20</p>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => e.target.files && uploadPhotos(e.target.files)}
+                />
+              </label>
 
               {fotos.length > 0 && (
                 <div className="mt-6">
@@ -490,7 +561,7 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
                   <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                     {fotos.map((foto, idx) => (
                       <div key={idx} className="aspect-square rounded-lg relative group overflow-hidden">
-                        <div className="w-full h-full" style={{ backgroundColor: foto }}></div>
+                        <img src={foto} alt="" className="w-full h-full object-cover" />
                         <button 
                           onClick={() => removePhoto(idx)}
                           className="absolute top-1 right-1 w-6 h-6 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
@@ -517,16 +588,23 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
               <div className="text-right text-xs text-gray-400 mt-2">{descricao.length}/2000</div>
             </div>
 
+            {errorUpdate && (
+              <div className="p-3 bg-red-50 text-red-600 text-sm font-medium border border-red-200 rounded-xl">
+                {errorUpdate}
+              </div>
+            )}
+
             <div className="flex gap-4 pt-4">
-              <button 
+              <button
                 onClick={handlePrev}
                 className="w-1/3 border border-gray-200 text-gray-700 font-semibold py-3.5 rounded-xl hover:bg-gray-50 transition-colors"
               >
                 Voltar
               </button>
-              <button 
+              <button
                 onClick={handleNext}
-                className="w-2/3 bg-black hover:bg-gray-800 text-white font-semibold py-3.5 rounded-xl transition-colors"
+                disabled={uploading}
+                className="w-2/3 bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors"
               >
                 Continuar
               </button>

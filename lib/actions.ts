@@ -118,6 +118,7 @@ export async function submitPropertyAction(formData: FormData) {
       ? Number(formData.get('price_estimate'))
       : undefined,
     description: (formData.get('description') as string) || undefined,
+    images: formData.get('images') ? JSON.parse(formData.get('images') as string) : [],
   };
 
   // Validação básica
@@ -137,6 +138,8 @@ export async function submitPropertyAction(formData: FormData) {
       phone: submission.owner_phone,
       source: 'lead-anunciar',
       pageUrl: '/anunciar',
+      pipelineId: 'Vsw7I2qUOYB2B98CpEmq',
+      stageId: '05d65a3d-4215-400b-b2f3-339985b408a6',
     });
 
     if (ghlResult.contactId) {

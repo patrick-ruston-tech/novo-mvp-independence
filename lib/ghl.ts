@@ -185,6 +185,8 @@ export async function processLeadFromSite(data: {
   propertyCode?: string;
   source: 'lead-imovel' | 'lead-anunciar';
   pageUrl?: string;
+  pipelineId?: string;
+  stageId?: string;
 }): Promise<{ contactId: string | null; opportunityId: string | null; associated: boolean }> {
   const result = { contactId: null as string | null, opportunityId: null as string | null, associated: false };
 
@@ -211,6 +213,8 @@ export async function processLeadFromSite(data: {
   const opportunity = await createOpportunity({
     contactId: contact.id,
     name: oppName,
+    pipelineId: data.pipelineId,
+    stageId: data.stageId,
   });
 
   if (opportunity) {
