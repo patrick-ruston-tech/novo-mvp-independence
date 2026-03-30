@@ -353,6 +353,7 @@ export async function createPropertySubmission(
     living_area: submission.living_area || null,
     price_estimate: submission.price_estimate || null,
     description: submission.description || null,
+    images: submission.images || [],
   });
 
   if (error) {
