@@ -215,6 +215,13 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           <h1 className="text-2xl md:text-3xl font-heading font-bold text-black leading-tight">
             {title}
           </h1>
+          {property.external_id && (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="bg-gray-100 text-gray-500 text-xs font-mono px-2.5 py-1 rounded-lg">
+                Cód: {property.external_id}
+              </span>
+            </div>
+          )}
           <p className="text-sm text-gray-400 flex items-center gap-1.5 mt-2">
             <MapPin className="w-3.5 h-3.5 text-[#EC5B13]" />
             {property.address ? `${property.address}, ` : ''}{bairroInfo?.name || property.neighborhood}, {property.city}
