@@ -144,7 +144,7 @@ export default async function ComprarBairroPage({
               className="animate-in fade-in slide-in-from-bottom-4 fill-mode-both"
               style={{ animationDelay: `${(idx % 12) * 50}ms`, animationDuration: '500ms' }}
             >
-              <PropertyCard property={property} />
+              <PropertyCard property={property} priceContext="sale" />
             </div>
           ))}
         </div>

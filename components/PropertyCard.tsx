@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PropertyCard as PropertyCardType } from '@/types/property';
 import { formatPrice, formatArea, getMainPrice, getDisplayTitle } from '@/lib/format';
 
-export default function PropertyCard({ property }: { property: PropertyCardType }) {
+export default function PropertyCard({ property, priceContext }: { property: PropertyCardType; priceContext?: 'sale' | 'rent' }) {
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -27,7 +27,7 @@ export default function PropertyCard({ property }: { property: PropertyCardType 
     setCurrentImageIdx((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  const { value: priceValue, label: priceLabel } = getMainPrice(property);
+  const { value: priceValue, label: priceLabel } = getMainPrice(property, priceContext);
   const displayTitle = property.title || getDisplayTitle(property);
 
   return (

@@ -25,15 +25,26 @@ export function formatArea(value: number | null): string {
 /**
  * Retorna o preço principal do imóvel conforme o tipo de transação.
  */
-export function getMainPrice(property: PropertyCard): {
+export function getMainPrice(property: PropertyCard, context?: 'sale' | 'rent'): {
   value: number | null;
   label: string;
 } {
+  // Se tem contexto (página de comprar ou alugar), prioriza o preço desse contexto
+  if (context === 'rent' && property.price_rent) {
+    return { value: property.price_rent, label: '/mês' };
+  }
+  if (context === 'sale' && property.price_sale) {
+    return { value: property.price_sale, label: '' };
+  }
+
+  // Fallback: comportamento padrão
   if (property.transaction_type === 'rent' && property.price_rent) {
     return { value: property.price_rent, label: '/mês' };
   }
   if (property.transaction_type === 'sale_rent') {
-    // Prioriza venda, mostra aluguel como alternativa
+    if (context === 'rent' && property.price_rent) {
+      return { value: property.price_rent, label: '/mês' };
+    }
     if (property.price_sale) {
       return { value: property.price_sale, label: '' };
     }
@@ -41,7 +52,13 @@ export function getMainPrice(property: PropertyCard): {
       return { value: property.price_rent, label: '/mês' };
     }
   }
-  return { value: property.price_sale, label: '' };
+  if (property.price_sale) {
+    return { value: property.price_sale, label: '' };
+  }
+  if (property.price_rent) {
+    return { value: property.price_rent, label: '/mês' };
+  }
+  return { value: null, label: '' };
 }
 
 /**
