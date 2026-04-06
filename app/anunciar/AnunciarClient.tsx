@@ -627,7 +627,7 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
               <h3 className="font-heading font-bold text-lg text-black mb-4">Seus dados de contato</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome completo *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome completo <span className="text-red-500">*</span></label>
                   <input 
                     value={nome} 
                     onChange={(e) => { setNome(e.target.value); setFieldErrors(prev => ({...prev, nome: ''})); }} 
@@ -638,7 +638,7 @@ export default function AnunciarClient({ bairros }: { bairros: Neighborhood[] })
                   {fieldErrors.nome && <p className="text-xs text-red-500 mt-1">{fieldErrors.nome}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Telefone / WhatsApp *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Telefone / WhatsApp <span className="text-red-500">*</span></label>
                   <input 
                     value={telefone} 
                     onChange={(e) => { setTelefone(maskPhone(e.target.value)); setFieldErrors(prev => ({...prev, telefone: ''})); }} 
