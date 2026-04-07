@@ -5,6 +5,7 @@ import { getProperties, getNeighborhoods, getZones } from '@/lib/queries';
 import PropertyCard from '@/components/PropertyCard';
 import SidebarFilters from '@/components/SidebarFilters';
 import Pagination from '@/components/Pagination';
+import SortSelect from '@/components/SortSelect';
 import { PropertyFilters as PropertyFiltersType } from '@/types/property';
 
 export const metadata: Metadata = {
@@ -42,15 +43,7 @@ async function PropertyGrid({
         </div>
         <div className="flex items-center gap-2 text-sm flex-shrink-0">
           <span className="text-gray-500 hidden sm:inline">Ordenar por:</span>
-          <select
-            defaultValue={filters.sort_by}
-            className="text-sm text-black font-medium bg-transparent outline-none cursor-pointer border border-gray-200 rounded-lg px-3 py-2"
-          >
-            <option value="newest">Mais recentes</option>
-            <option value="price_asc">Menor preço</option>
-            <option value="price_desc">Maior preço</option>
-            <option value="area_desc">Maior área</option>
-          </select>
+          <SortSelect defaultValue={filters.sort_by} />
         </div>
       </div>
 
