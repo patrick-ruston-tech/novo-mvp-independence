@@ -10,7 +10,7 @@ export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Sobre Nós | Independence',
-  description: 'Conheça a Independence Negócios Imobiliários. Mais de 24 anos transformando o mercado imobiliário de São José dos Campos.',
+  description: 'Conheça a Independence Negócios Imobiliários. Mais de 25 anos transformando o mercado imobiliário de São José dos Campos.',
 };
 
 export default async function SobrePage() {
@@ -71,7 +71,7 @@ export default async function SobrePage() {
               {/* Stats */}
               <div className="grid grid-cols-2 gap-8 mt-12 pt-10 border-t border-gray-100">
                 <div>
-                  <div className="font-heading font-extrabold text-5xl text-brand-red">24+</div>
+                  <div className="font-heading font-extrabold text-5xl text-brand-red">25+</div>
                   <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-2">Anos de Mercado</div>
                 </div>
                 <div>

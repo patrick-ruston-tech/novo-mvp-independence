@@ -12,7 +12,7 @@ import TestimonialCarousel from '@/components/TestimonialCarousel';
 
 export const metadata: Metadata = {
   title: 'Independence Negócios Imobiliários | Imóveis em São José dos Campos',
-  description: 'Encontre casas, apartamentos, terrenos e lançamentos à venda e para alugar em São José dos Campos e região. Mais de 24 anos de tradição no mercado imobiliário.',
+  description: 'Encontre casas, apartamentos, terrenos e lançamentos à venda e para alugar em São José dos Campos e região. Mais de 25 anos de tradição no mercado imobiliário.',
   alternates: { canonical: 'https://independenceimoveis.com.br' },
 };
 
@@ -222,7 +222,7 @@ export default function Home() {
               </p>
               <div className="flex gap-8 mb-8">
                 <div>
-                  <div className="font-heading font-extrabold text-4xl text-brand-red">24+</div>
+                  <div className="font-heading font-extrabold text-4xl text-brand-red">25+</div>
                   <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Anos de Mercado</div>
                 </div>
                 <div>

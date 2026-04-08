@@ -31,12 +31,12 @@ export default function Footer() {
               </a>
               <a href="https://www.tiktok.com/@independence.imoveis" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
                 <svg className="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.78a8.18 8.18 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.21z"/>
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.78a8.18 8.18 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.21z" />
                 </svg>
               </a>
               <a href="https://br.pinterest.com/independenceimoveissjc/_pins/" target="_blank" rel="noopener noreferrer" aria-label="Pinterest" className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
                 <svg className="w-4 h-4 text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M12 0a12 12 0 0 0-4.37 23.17c-.1-.94-.2-2.38.04-3.41.22-.93 1.4-5.93 1.4-5.93s-.36-.71-.36-1.77c0-1.66.96-2.9 2.16-2.9 1.02 0 1.51.77 1.51 1.68 0 1.03-.65 2.56-.99 3.98-.28 1.19.6 2.16 1.77 2.16 2.13 0 3.76-2.24 3.76-5.49 0-2.87-2.06-4.87-5-4.87-3.41 0-5.41 2.56-5.41 5.2 0 1.03.4 2.13.89 2.73.1.12.11.22.08.34l-.33 1.36c-.05.22-.18.27-.41.16-1.55-.72-2.52-2.98-2.52-4.8 0-3.91 2.84-7.5 8.18-7.5 4.3 0 7.63 3.06 7.63 7.14 0 4.27-2.69 7.7-6.43 7.7-1.26 0-2.43-.65-2.84-1.42l-.77 2.93c-.28 1.08-1.04 2.44-1.55 3.26A12 12 0 1 0 12 0z"/>
+                  <path d="M12 0a12 12 0 0 0-4.37 23.17c-.1-.94-.2-2.38.04-3.41.22-.93 1.4-5.93 1.4-5.93s-.36-.71-.36-1.77c0-1.66.96-2.9 2.16-2.9 1.02 0 1.51.77 1.51 1.68 0 1.03-.65 2.56-.99 3.98-.28 1.19.6 2.16 1.77 2.16 2.13 0 3.76-2.24 3.76-5.49 0-2.87-2.06-4.87-5-4.87-3.41 0-5.41 2.56-5.41 5.2 0 1.03.4 2.13.89 2.73.1.12.11.22.08.34l-.33 1.36c-.05.22-.18.27-.41.16-1.55-.72-2.52-2.98-2.52-4.8 0-3.91 2.84-7.5 8.18-7.5 4.3 0 7.63 3.06 7.63 7.14 0 4.27-2.69 7.7-6.43 7.7-1.26 0-2.43-.65-2.84-1.42l-.77 2.93c-.28 1.08-1.04 2.44-1.55 3.26A12 12 0 1 0 12 0z" />
                 </svg>
               </a>
             </div>
@@ -133,7 +133,7 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Independence Negócios Imobiliários. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-6 text-xs text-gray-500">
-            <span>CRECI-J 21.541</span>
+            <span>CRECI 19592-J-SP.</span>
             <Link href="/termos-de-uso" className="hover:text-gray-300 transition-colors">
               Termos de Uso
             </Link>
