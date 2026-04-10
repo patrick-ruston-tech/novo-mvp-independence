@@ -50,7 +50,7 @@ export default function LaunchBannerCarousel({ launches }: { launches: Launch[] 
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#1A2B3C] to-[#2d4a63]" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1A2B3C]/85 via-[#1A2B3C]/50 to-transparent" />
       </div>
 
       {/* Content */}
