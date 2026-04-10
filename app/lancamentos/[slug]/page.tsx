@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getLaunchBySlug, getLaunchProperties, getFeaturedLaunches } from '@/lib/queries';
 import ContactForm from '@/components/ContactForm';
 import PropertyMapWrapper from '@/components/PropertyMapWrapper';
+import LaunchMap from '@/components/LaunchMap';
 import GalleryGrid from '@/components/GalleryGrid';
 import FloorPlans from '@/components/FloorPlans';
 import LaunchCard from '@/components/LaunchCard';
@@ -278,6 +279,14 @@ export default async function LaunchDetailPage({ params }: { params: Promise<{ s
               latitude={launch.latitude ?? 0}
               longitude={launch.longitude ?? 0}
               address={launch.address || `${launch.neighborhood}, ${launch.city}`}
+            />
+          </div>
+        ) : launch.neighborhood ? (
+          <div className="rounded-2xl overflow-hidden h-[300px]">
+            <LaunchMap
+              neighborhood={launch.neighborhood}
+              city={launch.city || 'São José dos Campos'}
+              name={launch.name}
             />
           </div>
         ) : (
