@@ -56,6 +56,8 @@ export async function submitLeadAction(formData: FormData) {
       propertyCode,
       source: 'lead-imovel',
       pageUrl: lead.page_url || '',
+      pipelineId: 'tFthy3lQsGWeMn8auD90',
+      stageId: '4e179192-bb19-4ab9-863b-ce93b6659d77',
     });
 
     if (ghlResult.contactId) {
