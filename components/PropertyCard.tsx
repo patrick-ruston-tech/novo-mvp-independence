@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PropertyCard as PropertyCardType } from '@/types/property';
 import { formatPrice, formatArea, getMainPrice, getDisplayTitle } from '@/lib/format';
+import { getWatermarkedUrl } from '@/lib/image-utils';
 
 export default function PropertyCard({ property, priceContext }: { property: PropertyCardType; priceContext?: 'sale' | 'rent' }) {
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
@@ -45,7 +46,7 @@ export default function PropertyCard({ property, priceContext }: { property: Pro
           )}
 
           <Image
-            src={images[currentImageIdx].url}
+            src={getWatermarkedUrl(images[currentImageIdx].url)}
             alt={displayTitle}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"

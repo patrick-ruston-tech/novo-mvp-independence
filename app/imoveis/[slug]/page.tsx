@@ -11,6 +11,7 @@ import { Bed, Bath, Car, Maximize, MapPin } from 'lucide-react';
 import AmenitiesList from '@/components/AmenitiesList';
 import PropertyMapWrapper from '@/components/PropertyMapWrapper';
 import LaunchMiniBanner from '@/components/LaunchMiniBanner';
+import { getWatermarkedImages } from '@/lib/image-utils';
 
 export const revalidate = 3600;
 
@@ -72,7 +73,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
   const mainPrice = property.transaction_type === 'sale' ? property.price_sale : property.price_rent;
 
   const images = property.images && property.images.length > 0
-    ? property.images.map(img => img.url)
+    ? getWatermarkedImages(property.images)
     : ['/placeholder-image-url.jpg'];
 
   const bairroInfo = await getNeighborhoodBySlug(property.neighborhood);

@@ -166,14 +166,16 @@ export default function PropertyGallery({ images, tags }: { images: string[]; ta
               <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
             </button>
 
-            <div className="w-full max-w-5xl h-[70vh] relative">
-              <Image
-                src={images[currentIdx]}
-                alt={`Foto ${currentIdx + 1}`}
-                fill
-                className="object-contain"
+            <div className="w-full max-w-5xl h-[70vh] relative flex items-center justify-center">
+              <div className="relative w-full h-full">
+                <Image
+                  src={images[currentIdx]}
+                  alt={`Foto ${currentIdx + 1}`}
+                  fill
+                  className="object-contain"
 
-              />
+                />
+              </div>
             </div>
 
             <button

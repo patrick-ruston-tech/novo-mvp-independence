@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm list:*)"
+      "Bash(npm list:*)",
+      "Bash(mkdir -p \"/c/Users/patri/OneDrive/Área de Trabalho/arquivos-site/app/imoveis/[slug]\")",
+      "Bash(mkdir -p \"/c/Users/patri/OneDrive/Área de Trabalho/arquivos-site/components\")",
+      "Bash(cp app/globals.css \"/c/Users/patri/OneDrive/Área de Trabalho/arquivos-site/app/globals.css\")",
+      "Bash(cp app/layout.tsx \"/c/Users/patri/OneDrive/Área de Trabalho/arquivos-site/app/layout.tsx\")",
+      "Bash(cp app/page.tsx \"/c/Users/patri/OneDrive/Área de Trabalho/arquivos-site/app/page.tsx\")",
+      "Bash(cp \"app/imoveis/[slug]/page.tsx\" \"/c/Users/patri/OneDrive/Área de Trabalho/arquivos-site/app/imoveis/[slug]/page.tsx\")",
+      "Bash(cp components/Header.tsx components/Footer.tsx components/PropertyCard.tsx components/SidebarFilters.tsx \"/c/Users/patri/OneDrive/Área de Trabalho/arquivos-site/components/\")",
+      "Read(//c/Users/patri/OneDrive/Área de Trabalho/arquivos-site//**)"
     ]
   }
 }
