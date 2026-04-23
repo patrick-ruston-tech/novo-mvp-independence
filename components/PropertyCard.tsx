@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import PropertyImage from './PropertyImage';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PropertyCard as PropertyCardType } from '@/types/property';
@@ -45,7 +46,7 @@ export default function PropertyCard({ property, priceContext }: { property: Pro
             </div>
           )}
 
-          <Image
+          <PropertyImage
             src={getWatermarkedUrl(images[currentImageIdx].url)}
             alt={displayTitle}
             fill

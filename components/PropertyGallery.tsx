@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
 import Image from 'next/image';
+import PropertyImage from './PropertyImage';
 import { X, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
 
 export default function PropertyGallery({ images, tags }: { images: string[]; tags?: React.ReactNode }) {
@@ -60,7 +61,7 @@ export default function PropertyGallery({ images, tags }: { images: string[]; ta
           {!loadedImages.has(0) && (
             <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" />
           )}
-          <Image
+          <PropertyImage
             src={images[0]}
             alt="Foto principal"
             fill
@@ -90,7 +91,7 @@ export default function PropertyGallery({ images, tags }: { images: string[]; ta
             {!loadedImages.has(0) && (
               <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" />
             )}
-            <Image
+            <PropertyImage
               src={images[0]}
               alt="Foto principal"
               fill
@@ -115,7 +116,7 @@ export default function PropertyGallery({ images, tags }: { images: string[]; ta
                 {!loadedImages.has(realIdx) && (
                   <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-pulse" />
                 )}
-                <Image
+                <PropertyImage
                   src={img}
                   alt={`Foto ${realIdx + 1}`}
                   fill
@@ -168,7 +169,7 @@ export default function PropertyGallery({ images, tags }: { images: string[]; ta
 
             <div className="w-full max-w-5xl h-[70vh] relative flex items-center justify-center">
               <div className="relative w-full h-full">
-                <Image
+                <PropertyImage
                   src={images[currentIdx]}
                   alt={`Foto ${currentIdx + 1}`}
                   fill
@@ -198,7 +199,7 @@ export default function PropertyGallery({ images, tags }: { images: string[]; ta
                     : 'opacity-40 hover:opacity-70'
                     }`}
                 >
-                  <Image
+                  <PropertyImage
                     src={img}
                     alt={`Miniatura ${idx + 1}`}
                     fill
