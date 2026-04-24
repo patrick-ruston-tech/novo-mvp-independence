@@ -128,38 +128,34 @@ export async function submitPropertyAction(formData: FormData) {
     return { success: false, error: 'Nome e telefone são obrigatórios.' };
   }
 
-  // 1. Salva no Supabase
+  // 1. Salva no Supabase e captura o id
   const result = await createPropertySubmission(submission);
   if (!result.success) return result;
 
-  // 2. GHL sync completo: contato + opportunity + association
+  const submissionId = result.id;
+
+  // 2. GHL sync completo: contato (tag proprietário) + opportunity (pipeline Recebidos)
   try {
+    const adminBase = process.env.NEXT_PUBLIC_ADMIN_URL || 'https://painel-admin-independence.vercel.app';
+    const submissionUrl = submissionId ? `${adminBase}/recebidos/${submissionId}` : undefined;
+
     const ghlResult = await processLeadFromSite({
       name: submission.owner_name,
       email: submission.owner_email,
       phone: submission.owner_phone,
       source: 'lead-anunciar',
       pageUrl: '/anunciar',
+      submissionUrl,
       pipelineId: 'Vsw7I2qUOYB2B98CpEmq',
       stageId: '05d65a3d-4215-400b-b2f3-339985b408a6',
     });
 
-    if (ghlResult.contactId) {
+    if (ghlResult.contactId && submissionId) {
       const supabase = createServerClient();
-      const { data: recentSub } = await supabase
+      await supabase
         .from('property_submissions')
-        .select('id')
-        .eq('owner_phone', submission.owner_phone)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (recentSub) {
-        await supabase
-          .from('property_submissions')
-          .update({ ghl_contact_id: ghlResult.contactId })
-          .eq('id', recentSub.id);
-      }
+        .update({ ghl_contact_id: ghlResult.contactId })
+        .eq('id', submissionId);
     }
   } catch (e) {
     console.error('GHL sync error:', e);

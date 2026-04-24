@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { toCdn } from '@/lib/image-utils';
 
 const s3 = new S3Client({
   region: 'auto',
@@ -49,7 +50,9 @@ export async function POST(request: NextRequest) {
       CacheControl: 'public, max-age=31536000, immutable',
     }));
 
-    const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+    // toCdn garante o domínio custom e remove qualquer prefixo VARNAME=
+    // caso a env var R2_PUBLIC_URL tenha sido configurada incorretamente.
+    const publicUrl = toCdn(`${process.env.R2_PUBLIC_URL}/${key}`);
     return NextResponse.json({ url: publicUrl, key });
   } catch (error: any) {
     console.error('Upload error:', error);

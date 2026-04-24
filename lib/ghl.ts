@@ -185,20 +185,35 @@ export async function processLeadFromSite(data: {
   propertyCode?: string;
   source: 'lead-imovel' | 'lead-anunciar';
   pageUrl?: string;
+  /** URL da ficha do recebido no painel admin (só faz sentido quando source='lead-anunciar') */
+  submissionUrl?: string;
   pipelineId?: string;
   stageId?: string;
 }): Promise<{ contactId: string | null; opportunityId: string | null; associated: boolean }> {
   const result = { contactId: null as string | null, opportunityId: null as string | null, associated: false };
+
+  // Lead de envio de imóvel (anunciar) ganha a tag 'proprietario' pra cair
+  // na lista de owners no CRM. Mantemos 'lead-anunciar' pra segmentação fina.
+  const tags = data.source === 'lead-anunciar'
+    ? ['proprietario', 'lead-anunciar', 'site']
+    : [data.source, 'site'];
+
+  // No fluxo de anunciar, o CF 'origem' recebe a URL da ficha no painel
+  // admin (corretor clica e abre diretamente). Em lead-imovel, mantém o
+  // pageUrl da página onde veio o lead.
+  const origemValue = data.source === 'lead-anunciar' && data.submissionUrl
+    ? data.submissionUrl
+    : (data.pageUrl || 'site');
 
   // 1. Criar/atualizar contato
   const contact = await createOrUpdateContact({
     name: data.name,
     email: data.email,
     phone: data.phone,
-    tags: [data.source, 'site'],
+    tags,
     customFields: [
       ...(data.propertyCode ? [{ key: 'prN78aSY5MNiwm2pdOFl', value: data.propertyCode }] : []),
-      { key: 'fRs2gChyO0PfLfsTZopl', value: data.pageUrl || 'site' },
+      { key: 'fRs2gChyO0PfLfsTZopl', value: origemValue },
     ],
   });
 
@@ -206,9 +221,11 @@ export async function processLeadFromSite(data: {
   result.contactId = contact.id;
 
   // 2. Criar opportunity no pipeline
-  const oppName = data.propertyCode
-    ? `${data.name} - ${data.propertyCode}`
-    : `${data.name} - ${data.source}`;
+  const oppName = data.source === 'lead-anunciar'
+    ? `${data.name} — Imóvel para anunciar`
+    : data.propertyCode
+      ? `${data.name} - ${data.propertyCode}`
+      : `${data.name} - ${data.source}`;
 
   const opportunity = await createOpportunity({
     contactId: contact.id,

@@ -384,10 +384,10 @@ export async function createLead(lead: Lead): Promise<{ success: boolean; error?
  */
 export async function createPropertySubmission(
   submission: PropertySubmission
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; id?: string }> {
   const supabase = createServerClient();
 
-  const { error } = await supabase.from('property_submissions').insert({
+  const { data, error } = await supabase.from('property_submissions').insert({
     owner_name: submission.owner_name,
     owner_email: submission.owner_email || null,
     owner_phone: submission.owner_phone,
@@ -402,14 +402,14 @@ export async function createPropertySubmission(
     price_estimate: submission.price_estimate || null,
     description: submission.description || null,
     images: submission.images || [],
-  });
+  }).select('id').single();
 
   if (error) {
     console.error('createPropertySubmission error:', error);
     return { success: false, error: error.message };
   }
 
-  return { success: true };
+  return { success: true, id: data?.id };
 }
 
 // ============================================================
