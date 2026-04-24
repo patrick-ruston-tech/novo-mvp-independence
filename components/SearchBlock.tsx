@@ -178,6 +178,12 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
   const [filterPrecoMax, setFilterPrecoMax] = useState('');
   const [filterBairro, setFilterBairro] = useState('');
 
+  // Conta dinâmica por modo (fallback pro antigo property_count se indefinido).
+  const countFor = (b: typeof neighborhoods[number]) =>
+    mode === 'alugar'
+      ? (b.property_count_rent ?? b.property_count)
+      : (b.property_count_sale ?? b.property_count);
+
   const filteredBairros = searchQuery.length > 0
     ? neighborhoods.filter((b) =>
         b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -185,7 +191,8 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
         searchQuery.toUpperCase().match(/^[A-Z]{2}\d+/)
       )
     : [...neighborhoods]
-        .sort((a, b) => b.property_count - a.property_count)
+        .filter((b) => countFor(b) > 0)
+        .sort((a, b) => countFor(b) - countFor(a))
         .slice(0, 10);
 
   useEffect(() => {
@@ -320,7 +327,7 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
                 >
                   <span className="font-medium text-black block">{bairro.name}</span>
                   <span className="text-xs text-gray-400 truncate block mt-0.5">
-                    {bairro.city} · {bairro.property_count} {bairro.property_count === 1 ? 'imóvel' : 'imóveis'}
+                    {bairro.city} · {countFor(bairro)} {countFor(bairro) === 1 ? 'imóvel' : 'imóveis'}
                   </span>
                 </button>
               ))}

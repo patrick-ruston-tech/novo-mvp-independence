@@ -11,7 +11,7 @@ import { Bed, Bath, Car, Maximize, MapPin } from 'lucide-react';
 import AmenitiesList from '@/components/AmenitiesList';
 import PropertyMapWrapper from '@/components/PropertyMapWrapper';
 import LaunchMiniBanner from '@/components/LaunchMiniBanner';
-import { getWatermarkedImages } from '@/lib/image-utils';
+import { getWatermarkedImages, toCdn } from '@/lib/image-utils';
 
 export const revalidate = 3600;
 
@@ -36,7 +36,7 @@ export async function generateMetadata(
     ? property.images.find(img => img.is_primary)?.url || property.images[0].url
     : undefined;
 
-  const imageUrl = mainImage || '/hero/hero-1.jpg';
+  const imageUrl = mainImage ? toCdn(mainImage) : '/hero/hero-1.jpg';
 
   return {
     title: `${title} | Independence`,
@@ -110,7 +110,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           url: `https://independenceimoveis.com.br/imoveis/${property.slug}`,
           datePosted: property.listed_at || property.created_at,
           dateModified: property.updated_at || property.created_at,
-          image: property.images?.slice(0, 5).map((img: any) => typeof img === 'string' ? img : img.url) || [],
+          image: property.images?.slice(0, 5).map((img: any) => toCdn(typeof img === 'string' ? img : img.url)) || [],
           broker: {
             '@type': 'RealEstateAgent',
             name: 'Independence Negócios Imobiliários',
@@ -127,7 +127,11 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               : 'Residence',
             name: property.title,
             description: property.description?.substring(0, 200),
-            image: property.images?.[0]?.url || property.images?.[0],
+            image: toCdn(
+              (property.images?.[0] && typeof property.images[0] === 'string'
+                ? property.images[0]
+                : property.images?.[0]?.url) || ''
+            ),
             numberOfRooms: property.bedrooms || undefined,
             numberOfBathroomsTotal: property.bathrooms || undefined,
             floorSize: (property.living_area || property.lot_area) ? {

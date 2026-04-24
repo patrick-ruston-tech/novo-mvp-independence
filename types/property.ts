@@ -121,7 +121,12 @@ export interface Neighborhood {
   description: string | null;
   latitude: number | null;
   longitude: number | null;
+  /** Contagem armazenada na tabela — pode estar desatualizada. Mantida para compatibilidade. */
   property_count: number;
+  /** Ativos com transaction_type sale ou sale_rent — casa com o total de /comprar/[bairro]. */
+  property_count_sale?: number;
+  /** Ativos com transaction_type rent ou sale_rent — casa com o total de /alugar/[bairro]. */
+  property_count_rent?: number;
 }
 
 // ---- Lead ----

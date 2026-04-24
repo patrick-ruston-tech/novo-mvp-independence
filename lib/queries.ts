@@ -263,14 +263,62 @@ export async function getNeighborhoods(city?: string): Promise<Neighborhood[]> {
   const cached = unstable_cache(
     async () => {
       const supabase = createServerClient();
-      let query = supabase.from('neighborhoods').select('id, name, slug, city, property_count').order('property_count', { ascending: false });
-      if (city) query = query.eq('city', city);
-      const { data, error } = await query;
-      if (error) {
+
+      // 1. Bairros cadastrados
+      let nbQuery = supabase
+        .from('neighborhoods')
+        .select('id, name, slug, city, property_count');
+      if (city) nbQuery = nbQuery.eq('city', city);
+      const { data: neighborhoods, error } = await nbQuery;
+      if (error || !neighborhoods) {
         console.error('getNeighborhoods error:', error);
         return [];
       }
-      return data ?? [];
+
+      // 2. Contagem dinâmica a partir dos imóveis ativos (mesmo filtro usado
+      //    nas páginas /comprar e /alugar). Paginamos porque Supabase REST
+      //    retorna no máximo 1000 linhas.
+      const allRows: Array<{ neighborhood: string | null; transaction_type: string | null }> = [];
+      let offset = 0;
+      while (true) {
+        let q = supabase
+          .from('properties')
+          .select('neighborhood, transaction_type')
+          .eq('status', 'active')
+          .range(offset, offset + 999);
+        if (city) q = q.eq('city', city);
+        const { data: pageRows } = await q;
+        if (!pageRows || pageRows.length === 0) break;
+        allRows.push(...(pageRows as any));
+        if (pageRows.length < 1000) break;
+        offset += 1000;
+      }
+
+      const saleCounts: Record<string, number> = {};
+      const rentCounts: Record<string, number> = {};
+      for (const r of allRows) {
+        const nb = r.neighborhood;
+        if (!nb) continue;
+        const t = r.transaction_type;
+        if (t === 'sale' || t === 'sale_rent') {
+          saleCounts[nb] = (saleCounts[nb] || 0) + 1;
+        }
+        if (t === 'rent' || t === 'sale_rent') {
+          rentCounts[nb] = (rentCounts[nb] || 0) + 1;
+        }
+      }
+
+      // 3. Merge e ordena pelo total dinâmico (sale + rent sem deduplicar tipo misto)
+      const enriched = neighborhoods.map((n: any) => ({
+        ...n,
+        property_count_sale: saleCounts[n.name] || 0,
+        property_count_rent: rentCounts[n.name] || 0,
+      }));
+      enriched.sort((a, b) =>
+        (b.property_count_sale + b.property_count_rent) -
+        (a.property_count_sale + a.property_count_rent)
+      );
+      return enriched;
     },
     ['neighborhoods', city || 'all'],
     { revalidate: 600 }
