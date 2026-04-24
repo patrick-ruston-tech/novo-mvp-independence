@@ -10,7 +10,10 @@ const R2_PUBLIC_HOST_PATTERN = /https:\/\/pub-[a-z0-9]+\.r2\.dev/i;
 
 export function toCdn(url: string): string {
   if (!url) return url;
-  return url.replace(R2_PUBLIC_HOST_PATTERN, `https://${CDN_HOST}`);
+  // Defesa: se uma URL no banco vier com `R2_PUBLIC_URL=` colado junto
+  // (erro de env var no server), remove antes de processar.
+  const cleaned = url.replace(/^[A-Z_][A-Z0-9_]*=/i, '');
+  return cleaned.replace(R2_PUBLIC_HOST_PATTERN, `https://${CDN_HOST}`);
 }
 
 function isR2Url(url: string): boolean {
@@ -26,7 +29,11 @@ export function getWatermarkedUrl(url: string): string {
   const filename = cdn.substring(cdn.lastIndexOf('/') + 1);
   // Já tem /wm/ — não duplica
   if (base.endsWith('/wm')) return cdn;
-  return `${base}/wm/${filename}`;
+  // A rota /api/watermark-generate sempre produz WebP no /wm/,
+  // independente do formato original (jpg/jpeg/png → webp).
+  // Mantemos o nome mas normalizamos a extensão pra casar com o arquivo real.
+  const wmFilename = filename.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+  return `${base}/wm/${wmFilename}`;
 }
 
 /**
