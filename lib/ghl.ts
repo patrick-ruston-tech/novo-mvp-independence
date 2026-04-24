@@ -76,6 +76,28 @@ export async function createOrUpdateContact(data: {
 /**
  * Cria opportunity no pipeline de Pré-venda
  */
+/**
+ * Cria uma nota no timeline do contato — aparece prominente na aba de atividades.
+ */
+export async function addContactNote(contactId: string, body: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${GHL_BASE_URL}/contacts/${contactId}/notes`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ body }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('GHL addContactNote error:', response.status, errorText);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('GHL addContactNote exception:', error);
+    return false;
+  }
+}
+
 export async function createOpportunity(data: {
   contactId: string;
   name: string;
@@ -244,6 +266,12 @@ export async function processLeadFromSite(data: {
     if (propertyObject) {
       result.associated = await associateContactToProperty(contact.id, propertyObject.id);
     }
+  }
+
+  // 4. Em 'lead-anunciar', adiciona nota visível no timeline com o link do admin
+  if (data.source === 'lead-anunciar' && data.submissionUrl) {
+    const noteBody = `Imóvel enviado para anúncio via site.\n\nFicha no painel admin:\n${data.submissionUrl}`;
+    await addContactNote(contact.id, noteBody);
   }
 
   return result;
