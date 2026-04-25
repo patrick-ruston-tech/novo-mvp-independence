@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { SlidersHorizontal, X, Check, MapPin, Home, DollarSign, BedDouble, Bath, Car, Sparkles, Building2 } from 'lucide-react';
+import { PROPERTY_TYPE_GROUPS, FEATURES_FOR_FILTER, findPropertyTypeBySlug } from '@/lib/property-vocabulary';
 
 const CITIES = [
   { label: 'Todas as cidades', value: '' },
@@ -11,20 +12,9 @@ const CITIES = [
   { label: 'Caçapava', value: 'Caçapava' },
 ];
 
-const TYPES = [
-  { label: 'Apartamento', value: 'apartment' },
-  { label: 'Casa', value: 'house' },
-  { label: 'Sobrado', value: 'sobrado' },
-  { label: 'Condomínio', value: 'condo' },
-  { label: 'Terreno', value: 'land' },
-  { label: 'Sala Comercial', value: 'office' },
-];
-
 const BEDROOMS = ['1', '2', '3', '4+'];
 const SUITES = ['1', '2', '3+'];
 const GARAGES = ['1', '2', '3', '4+'];
-
-const AMENITIES = ['Piscina', 'Churrasqueira', 'Armários Planejados', 'Varanda', 'Elevador', 'Área Gourmet'];
 
 interface SidebarFiltersProps {
   transactionType: 'sale' | 'rent';
@@ -41,7 +31,11 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], cu
   const baseRoute = transactionType === 'sale' ? '/comprar' : '/alugar';
 
   const [selectedCity, setSelectedCity] = useState(searchParams.get('cidade') || '');
-  const [selectedType, setSelectedType] = useState(searchParams.get('tipo') || '');
+  // Normaliza slug legado (?tipo=apartment) para canônico PT (?tipo=apartamento)
+  const [selectedType, setSelectedType] = useState(() => {
+    const raw = searchParams.get('tipo') || '';
+    return findPropertyTypeBySlug(raw)?.slug ?? raw;
+  });
   const [selectedBedrooms, setSelectedBedrooms] = useState(searchParams.get('quartos') || '');
   const [selectedSuites, setSelectedSuites] = useState(searchParams.get('suites') || '');
   const [selectedGarages, setSelectedGarages] = useState(searchParams.get('garagens') || '');
@@ -168,24 +162,33 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], cu
         </select>
       </div>
 
-      {/* Tipo de imóvel */}
+      {/* Tipo de imóvel — agrupado por categoria */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
           <Home className="w-3.5 h-3.5" aria-hidden="true" /> Tipo de Imóvel
         </label>
-        <div className="flex flex-col gap-2">
-          {TYPES.map(tipo => (
-            <button
-              key={tipo.value}
-              onClick={() => togglePill(tipo.value, selectedType, setSelectedType)}
-              className={`px-3 py-2 rounded-xl text-sm font-medium transition-[background-color,color,border-color] ${
-                selectedType === tipo.value
-                  ? 'bg-brand-red text-white'
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
-              }`}
-            >
-              {tipo.label}
-            </button>
+        <div className="space-y-3">
+          {PROPERTY_TYPE_GROUPS.map(group => (
+            <div key={group.id}>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
+                {group.labelPt}
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {group.types.map(tipo => (
+                  <button
+                    key={tipo.slug}
+                    onClick={() => togglePill(tipo.slug, selectedType, setSelectedType)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-[background-color,color,border-color] ${
+                      selectedType === tipo.slug
+                        ? 'bg-brand-red text-white'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    {tipo.labelPt}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -374,8 +377,8 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], cu
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
           <Sparkles className="w-3.5 h-3.5" aria-hidden="true" /> Comodidades
         </label>
-        <div className="space-y-2">
-          {AMENITIES.map(amenity => {
+        <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+          {FEATURES_FOR_FILTER.map(amenity => {
             const id = `amenity-${amenity.replace(/\s+/g, '-').toLowerCase()}`;
             return (
               <label key={amenity} htmlFor={id} className="flex items-center gap-3 cursor-pointer group">

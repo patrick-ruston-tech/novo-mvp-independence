@@ -10,6 +10,10 @@ import type {
   Lead,
   PropertySubmission,
 } from '@/types/property';
+import {
+  propertyTypeDbValues,
+  FEATURES_FOR_FILTER,
+} from '@/lib/property-vocabulary';
 
 // ============================================================
 // PROPERTY QUERIES
@@ -69,14 +73,16 @@ export async function getProperties(
     query = query.eq('neighborhood', neighborhood);
   }
   if (property_type) {
-    // Traduz o slug da URL para o valor real armazenado em PT no banco.
-    // Se o slug não tiver mapping conhecido, usa o valor direto (permite
-    // passar a string PT diretamente, ex: "Apartamento").
-    const mapped = PROPERTY_TYPE_MAP[String(property_type).toLowerCase()] ?? property_type;
-    if (Array.isArray(mapped)) {
-      query = query.in('property_type', mapped);
+    // Resolve o slug (PT canônico ou legado EN) para o(s) valor(es) armazenado(s)
+    // no banco via property-vocabulary. Se o slug não for conhecido, faz match
+    // direto na string (permite passar PT bruto, ex: "Apartamento").
+    const dbValues = propertyTypeDbValues(property_type);
+    if (dbValues.length > 1) {
+      query = query.in('property_type', dbValues as string[]);
+    } else if (dbValues.length === 1) {
+      query = query.eq('property_type', dbValues[0]);
     } else {
-      query = query.eq('property_type', mapped);
+      query = query.eq('property_type', String(property_type));
     }
   }
   if (bedrooms_min) {
@@ -90,9 +96,6 @@ export async function getProperties(
   }
   if (city) {
     query = query.eq('city', city);
-  }
-  if (filters.zona) {
-    query = query.eq('zone', filters.zona);
   }
   if (filters.codigo) {
     query = query.ilike('external_id', `%${filters.codigo}%`);
@@ -108,19 +111,28 @@ export async function getProperties(
     query = query.lte(priceCol, price_max);
   }
 
-  // Filtro por features (ex: Piscina, Churrasqueira)
+  // Filtro por features/comodidades (coluna features text[]).
+  // Aceita duas fontes:
+  //   - filters.features: array passado programaticamente
+  //   - filters.comodidades: string CSV vinda da URL (?comodidades=A,B,C)
+  // Whitelist contra a lista canônica do vocabulário para evitar injection.
+  const requested = new Set<string>();
   if (features && features.length > 0) {
-    query = query.contains('features', features);
+    for (const f of features) requested.add(f);
   }
-
-  // Comodidades filter (via URL param string)
-  const VALID_AMENITIES = ['Piscina', 'Churrasqueira', 'Armários Planejados', 'Varanda', 'Elevador', 'Área Gourmet', 'Aquecimento', 'Salão de Festas', 'Quadra Esportiva', 'Dependência de Empregada'];
-  const comodidadesList = typeof comodidades === 'string'
-    ? comodidades.split(',').filter((a: string) => VALID_AMENITIES.includes(a))
-    : [];
-
-  for (const amenity of comodidadesList) {
-    query = query.contains('features', [amenity]);
+  if (typeof comodidades === 'string' && comodidades) {
+    for (const f of comodidades.split(',')) {
+      const trimmed = f.trim();
+      if (trimmed) requested.add(trimmed);
+    }
+  }
+  const allowed: string[] = [];
+  for (const f of requested) {
+    if (FEATURES_FOR_FILTER.includes(f)) allowed.push(f);
+  }
+  // Postgres array @> (contains) com todos os valores: AND implícito.
+  if (allowed.length > 0) {
+    query = query.contains('features', allowed);
   }
 
   // Ordenação
@@ -267,39 +279,8 @@ export async function getAllPropertySlugs(): Promise<string[]> {
 // NEIGHBORHOOD QUERIES
 // ============================================================
 
-/**
- * Mapeia o slug do tipo de imóvel (vindo da URL) para o(s) valor(es) reais
- * armazenado(s) no banco. O painel admin grava em português; a URL usa
- * slugs em inglês para SEO/legibilidade.
- *
- * Quando o valor é array, vira `WHERE property_type IN (...)` para cobrir
- * categorias amplas (ex: "comercial" cobre vários tipos).
- */
-const PROPERTY_TYPE_MAP: Record<string, string | string[]> = {
-  apartment: 'Apartamento',
-  apartamento: 'Apartamento',
-  house: 'Casa',
-  casa: 'Casa',
-  sobrado: 'Sobrado',
-  condo: 'Apartamento',
-  land: 'Terreno',
-  terreno: 'Terreno',
-  office: ['Sala', 'Conjunto comercial', 'Andar corporativo'],
-  sala: ['Sala', 'Conjunto comercial', 'Andar corporativo'],
-  commercial: ['Sala', 'Loja', 'Galpão / Barracão', 'Conjunto comercial', 'Andar corporativo', 'Ponto', 'Prédio'],
-  loja: 'Loja',
-  galpao: 'Galpão / Barracão',
-  flat: 'Flat',
-  kitnet: 'Kitnet',
-  studio: 'Studio',
-  loft: 'Loft',
-  penthouse: 'Cobertura / Penthouse',
-  cobertura: 'Cobertura / Penthouse',
-  farm: ['Chácara', 'Sítio', 'Fazenda'],
-  chacara: 'Chácara',
-  sitio: 'Sítio',
-  fazenda: 'Fazenda',
-};
+// PROPERTY_TYPE_MAP removido — a lógica foi centralizada em
+// lib/property-vocabulary.ts (use propertyTypeDbValues / findPropertyTypeBySlug).
 
 /**
  * Lista todos os bairros com imóveis ativos.
