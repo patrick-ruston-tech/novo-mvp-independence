@@ -118,6 +118,7 @@ export default async function ComprarPage({
     : 'newest';
   const property_type = resolvedParams.tipo as PropertyFiltersType['property_type'];
   const bedrooms_min = safePositiveInt(resolvedParams.quartos, 20);
+  const suites_min = safePositiveInt(resolvedParams.suites, 20);
   const price_min = safePositiveInt(resolvedParams.preco_min);
   const price_max = safePositiveInt(resolvedParams.preco_max);
   const garages_min = safePositiveInt(resolvedParams.garagens, 20);
@@ -133,6 +134,7 @@ export default async function ComprarPage({
     sort_by,
     property_type,
     bedrooms_min,
+    suites_min,
     price_min,
     price_max,
     garages_min,

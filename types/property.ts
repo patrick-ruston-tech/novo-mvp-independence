@@ -169,6 +169,7 @@ export interface PropertyFilters {
   neighborhood?: string;
   property_type?: PropertyType;
   bedrooms_min?: number;
+  suites_min?: number;
   price_min?: number;
   price_max?: number;
   garages_min?: number;

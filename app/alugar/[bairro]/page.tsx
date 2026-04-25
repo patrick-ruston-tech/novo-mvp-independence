@@ -65,6 +65,7 @@ export default async function AlugarBairroPage({
     : 'newest';
   const property_type = resolvedSearch.tipo as PropertyFiltersType['property_type'];
   const bedrooms_min = safePositiveInt(resolvedSearch.quartos, 20);
+  const suites_min = safePositiveInt(resolvedSearch.suites, 20);
   const price_min = safePositiveInt(resolvedSearch.preco_min);
   const price_max = safePositiveInt(resolvedSearch.preco_max);
   const garages_min = safePositiveInt(resolvedSearch.garagens, 20);
@@ -77,6 +78,7 @@ export default async function AlugarBairroPage({
     sort_by,
     property_type,
     bedrooms_min,
+    suites_min,
     price_min,
     price_max,
     garages_min,

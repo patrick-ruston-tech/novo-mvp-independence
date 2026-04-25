@@ -38,6 +38,7 @@ export async function getProperties(
     neighborhood,
     property_type,
     bedrooms_min,
+    suites_min,
     price_min,
     price_max,
     garages_min,
@@ -68,10 +69,21 @@ export async function getProperties(
     query = query.eq('neighborhood', neighborhood);
   }
   if (property_type) {
-    query = query.eq('property_type', property_type);
+    // Traduz o slug da URL para o valor real armazenado em PT no banco.
+    // Se o slug não tiver mapping conhecido, usa o valor direto (permite
+    // passar a string PT diretamente, ex: "Apartamento").
+    const mapped = PROPERTY_TYPE_MAP[String(property_type).toLowerCase()] ?? property_type;
+    if (Array.isArray(mapped)) {
+      query = query.in('property_type', mapped);
+    } else {
+      query = query.eq('property_type', mapped);
+    }
   }
   if (bedrooms_min) {
     query = query.gte('bedrooms', bedrooms_min);
+  }
+  if (suites_min) {
+    query = query.gte('suites', suites_min);
   }
   if (garages_min) {
     query = query.gte('garages', garages_min);
@@ -254,6 +266,40 @@ export async function getAllPropertySlugs(): Promise<string[]> {
 // ============================================================
 // NEIGHBORHOOD QUERIES
 // ============================================================
+
+/**
+ * Mapeia o slug do tipo de imóvel (vindo da URL) para o(s) valor(es) reais
+ * armazenado(s) no banco. O painel admin grava em português; a URL usa
+ * slugs em inglês para SEO/legibilidade.
+ *
+ * Quando o valor é array, vira `WHERE property_type IN (...)` para cobrir
+ * categorias amplas (ex: "comercial" cobre vários tipos).
+ */
+const PROPERTY_TYPE_MAP: Record<string, string | string[]> = {
+  apartment: 'Apartamento',
+  apartamento: 'Apartamento',
+  house: 'Casa',
+  casa: 'Casa',
+  sobrado: 'Sobrado',
+  condo: 'Apartamento',
+  land: 'Terreno',
+  terreno: 'Terreno',
+  office: ['Sala', 'Conjunto comercial', 'Andar corporativo'],
+  sala: ['Sala', 'Conjunto comercial', 'Andar corporativo'],
+  commercial: ['Sala', 'Loja', 'Galpão / Barracão', 'Conjunto comercial', 'Andar corporativo', 'Ponto', 'Prédio'],
+  loja: 'Loja',
+  galpao: 'Galpão / Barracão',
+  flat: 'Flat',
+  kitnet: 'Kitnet',
+  studio: 'Studio',
+  loft: 'Loft',
+  penthouse: 'Cobertura / Penthouse',
+  cobertura: 'Cobertura / Penthouse',
+  farm: ['Chácara', 'Sítio', 'Fazenda'],
+  chacara: 'Chácara',
+  sitio: 'Sítio',
+  fazenda: 'Fazenda',
+};
 
 /**
  * Lista todos os bairros com imóveis ativos.
