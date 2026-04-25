@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { SlidersHorizontal, X, Check, MapPin, Home, DollarSign, BedDouble, Bath, Car, Sparkles, Building2, Globe } from 'lucide-react';
+import { SlidersHorizontal, X, Check, MapPin, Home, DollarSign, BedDouble, Bath, Car, Sparkles, Building2 } from 'lucide-react';
 
 const CITIES = [
   { label: 'Todas as cidades', value: '' },
@@ -28,14 +28,17 @@ const AMENITIES = ['Piscina', 'Churrasqueira', 'Armários Planejados', 'Varanda'
 
 interface SidebarFiltersProps {
   transactionType: 'sale' | 'rent';
-  neighborhoods?: { name: string; slug: string; city: string; property_count: number; zone_id?: string }[];
-  zones?: { id: string; name: string; slug: string }[];
+  neighborhoods?: { name: string; slug: string; city: string; property_count: number }[];
+  /** Slug do bairro atual (vindo da rota /comprar/[bairro] ou /alugar/[bairro]) */
+  currentNeighborhoodSlug?: string;
 }
 
-export default function SidebarFilters({ transactionType, neighborhoods = [], zones = [] }: SidebarFiltersProps) {
+export default function SidebarFilters({ transactionType, neighborhoods = [], currentNeighborhoodSlug }: SidebarFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const baseRoute = transactionType === 'sale' ? '/comprar' : '/alugar';
 
   const [selectedCity, setSelectedCity] = useState(searchParams.get('cidade') || '');
   const [selectedType, setSelectedType] = useState(searchParams.get('tipo') || '');
@@ -47,8 +50,10 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], zo
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(
     searchParams.get('comodidades')?.split(',').filter(Boolean) || []
   );
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState(searchParams.get('bairro') || '');
-  const [selectedZone, setSelectedZone] = useState(searchParams.get('zona') || '');
+  // Bairro armazenado como slug. Pré-seleciona da URL dinâmica /comprar/[bairro] ou do query ?bairro=
+  const [selectedNeighborhoodSlug, setSelectedNeighborhoodSlug] = useState(
+    currentNeighborhoodSlug || searchParams.get('bairro') || ''
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const maxPrice = transactionType === 'sale' ? 20000000 : 15000;
@@ -70,13 +75,16 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], zo
     if (selectedGarages) params.set('garagens', selectedGarages);
     if (priceMin > 0) params.set('preco_min', String(priceMin));
     if (priceMax < maxPrice) params.set('preco_max', String(priceMax));
-    if (selectedNeighborhood) params.set('bairro', selectedNeighborhood);
-    if (selectedZone) params.set('zona', selectedZone);
     if (selectedAmenities.length > 0) params.set('comodidades', selectedAmenities.join(','));
 
     params.delete('pagina');
+    // Quando há bairro selecionado, navega para a rota dinâmica /comprar/[slug] (ou /alugar/[slug]).
+    // Senão, navega para a raiz /comprar ou /alugar.
+    const targetPath = selectedNeighborhoodSlug
+      ? `${baseRoute}/${selectedNeighborhoodSlug}`
+      : baseRoute;
     const query = params.toString();
-    router.push(`${pathname}${query ? `?${query}` : ''}`);
+    router.push(`${targetPath}${query ? `?${query}` : ''}`);
     setMobileOpen(false);
   }
 
@@ -89,13 +97,12 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], zo
     setPriceMin(0);
     setPriceMax(maxPrice);
     setSelectedAmenities([]);
-    setSelectedNeighborhood('');
-    setSelectedZone('');
-    router.push(pathname);
+    setSelectedNeighborhoodSlug('');
+    router.push(baseRoute);
     setMobileOpen(false);
   }
 
-  const hasFilters = selectedCity || selectedType || selectedBedrooms || selectedSuites || selectedGarages || priceMin > 0 || priceMax < maxPrice || selectedNeighborhood || selectedZone || selectedAmenities.length > 0;
+  const hasFilters = selectedCity || selectedType || selectedBedrooms || selectedSuites || selectedGarages || priceMin > 0 || priceMax < maxPrice || selectedNeighborhoodSlug || selectedAmenities.length > 0;
 
   const togglePill = (value: string, current: string, setter: (v: string) => void) => {
     setter(current === value ? '' : value);
@@ -122,25 +129,6 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], zo
         )}
       </div>
 
-      {/* Zona */}
-      {zones.length > 0 && (
-        <div>
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
-            <Globe className="w-3.5 h-3.5" /> Zona / Região
-          </label>
-          <select
-            value={selectedZone}
-            onChange={(e) => setSelectedZone(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-black bg-white focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none"
-          >
-            <option value="">Todas as zonas</option>
-            {zones.map(z => (
-              <option key={z.id} value={z.name}>{z.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
       {/* Localização */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
@@ -163,16 +151,16 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], zo
           <Building2 className="w-3.5 h-3.5" aria-hidden="true" /> Bairro
         </label>
         <select
-          value={selectedNeighborhood}
-          onChange={(e) => setSelectedNeighborhood(e.target.value)}
+          value={selectedNeighborhoodSlug}
+          onChange={(e) => setSelectedNeighborhoodSlug(e.target.value)}
           className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-black bg-white focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none"
         >
           <option value="">Todos os bairros</option>
           {neighborhoods
-            .filter(b => (!selectedCity || b.city === selectedCity) && (!selectedZone || zones.find(z => z.id === b.zone_id)?.name === selectedZone))
+            .filter(b => !selectedCity || b.city === selectedCity)
             .sort((a, b) => b.property_count - a.property_count)
             .map(b => (
-              <option key={b.slug} value={b.name}>
+              <option key={b.slug} value={b.slug}>
                 {b.name} ({b.property_count})
               </option>
             ))

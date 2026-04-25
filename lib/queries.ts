@@ -647,13 +647,3 @@ export async function getTeamMembers(): Promise<any[]> {
   return data ?? [];
 }
 
-export async function getZones(): Promise<any[]> {
-  const supabase = createServerClient();
-  const { data, error } = await supabase
-    .from('zones')
-    .select('id, name, slug')
-    .eq('is_active', true)
-    .order('name');
-  if (error) return [];
-  return data ?? [];
-}

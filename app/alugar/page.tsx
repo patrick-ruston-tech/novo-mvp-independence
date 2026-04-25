@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { getProperties, getNeighborhoods, getZones } from '@/lib/queries';
+import { getProperties, getNeighborhoods } from '@/lib/queries';
 import PropertyCard from '@/components/PropertyCard';
 import SidebarFilters from '@/components/SidebarFilters';
 import Pagination from '@/components/Pagination';
@@ -76,8 +76,8 @@ async function PropertyGrid({
 }
 
 async function SidebarWithData() {
-  const [neighborhoods, zones] = await Promise.all([getNeighborhoods(), getZones()]);
-  return <SidebarFilters transactionType="rent" neighborhoods={neighborhoods} zones={zones} />;
+  const neighborhoods = await getNeighborhoods();
+  return <SidebarFilters transactionType="rent" neighborhoods={neighborhoods} />;
 }
 
 function GridSkeleton() {
@@ -124,7 +124,6 @@ export default async function AlugarPage({
   const garages_min = safePositiveInt(resolvedParams.garagens, 20);
   const city = resolvedParams.cidade as string | undefined;
   const comodidades = resolvedParams.comodidades as string | undefined;
-  const zona = resolvedParams.zona as string | undefined;
   const codigo = resolvedParams.codigo as string | undefined;
 
   const filters: PropertyFiltersType = {
@@ -140,7 +139,6 @@ export default async function AlugarPage({
     garages_min,
     city,
     comodidades,
-    zona,
     codigo,
   };
 
