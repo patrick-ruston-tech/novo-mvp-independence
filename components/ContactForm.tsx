@@ -120,6 +120,15 @@ export default function ContactForm({
         </button>
       </form>
 
+      {/*
+        Botão "Falar pelo WhatsApp" ocultado da ficha do imóvel.
+        Motivo: a equipe tem vários celulares conectados (cada corretor
+        com o seu) e não há um único número padrão pra direcionar leads
+        diretamente da ficha. O usuário deve usar o formulário acima
+        — leads são distribuídos pelo CRM. Pra contato direto via WhatsApp,
+        o botão flutuante (WhatsAppButton) usa um número dedicado de
+        captação. Pra reabilitar, basta descomentar.
+
       <div className="mt-4">
         <a
           href="https://wa.me/551239000000"
@@ -131,6 +140,7 @@ export default function ContactForm({
           Falar pelo WhatsApp
         </a>
       </div>
+      */}
     </>
   );
 }
