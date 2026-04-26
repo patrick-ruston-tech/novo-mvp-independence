@@ -211,14 +211,19 @@ export async function processLeadFromSite(data: {
   submissionUrl?: string;
   pipelineId?: string;
   stageId?: string;
+  /** Tags adicionais (ex: tag de roleta calculada pelo caller). */
+  extraTags?: string[];
 }): Promise<{ contactId: string | null; opportunityId: string | null; associated: boolean }> {
   const result = { contactId: null as string | null, opportunityId: null as string | null, associated: false };
 
   // Lead de envio de imóvel (anunciar) ganha a tag 'proprietario' pra cair
   // na lista de owners no CRM. Mantemos 'lead-anunciar' pra segmentação fina.
-  const tags = data.source === 'lead-anunciar'
+  const baseTags = data.source === 'lead-anunciar'
     ? ['proprietario', 'lead-anunciar', 'site']
     : [data.source, 'site'];
+  const tags = [...baseTags, ...(data.extraTags ?? [])].filter(
+    (t, i, arr) => t && arr.indexOf(t) === i
+  );
 
   // No fluxo de anunciar, o CF 'origem' recebe a URL da ficha no painel
   // admin (corretor clica e abre diretamente). Em lead-imovel, mantém o

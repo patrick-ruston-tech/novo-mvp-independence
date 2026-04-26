@@ -2,6 +2,7 @@
 
 import { createLead, createPropertySubmission } from '@/lib/queries';
 import { processLeadFromSite } from '@/lib/ghl';
+import { getRouletteTag } from '@/lib/roulette';
 import type { Lead, PropertySubmission } from '@/types/property';
 import { createServerClient } from '@/lib/supabase/server';
 
@@ -31,17 +32,19 @@ export async function submitLeadAction(formData: FormData) {
   const result = await createLead(lead);
   if (!result.success) return result;
 
-  // 2. Busca o external_id do imóvel (se tiver property_id)
+  // 2. Busca dados do imóvel pra extrair external_id + critérios de roleta.
   let propertyCode: string | undefined;
+  let rouletteTag: string | null = null;
   if (lead.property_id) {
     try {
       const supabase = createServerClient();
       const { data } = await supabase
         .from('properties')
-        .select('external_id')
+        .select('external_id, transaction_type, price_sale, property_type, is_launch')
         .eq('id', lead.property_id)
         .single();
       propertyCode = data?.external_id;
+      rouletteTag = getRouletteTag(data);
     } catch (e) {
       // Não bloqueia o fluxo se falhar
     }
@@ -58,6 +61,9 @@ export async function submitLeadAction(formData: FormData) {
       pageUrl: lead.page_url || '',
       pipelineId: 'tFthy3lQsGWeMn8auD90',
       stageId: '4e179192-bb19-4ab9-863b-ce93b6659d77',
+      // Tag de roleta dispara workflow específico no GHL pra distribuir
+      // o lead pra equipe correta (lançamento / locação / venda <500k / venda >=500k).
+      extraTags: rouletteTag ? [rouletteTag] : undefined,
     });
 
     if (ghlResult.contactId) {
