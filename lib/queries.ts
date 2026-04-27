@@ -22,7 +22,7 @@ import {
 // Campos retornados para cards (listagens) — evita carregar description/detail_url
 const CARD_FIELDS = `
   id, slug, transaction_type, property_type,
-  price_sale, price_rent, price_condo,
+  price_sale, price_rent, price_condo, rent_type,
   neighborhood, city, address,
   living_area, lot_area,
   bedrooms, bathrooms, suites, garages,

@@ -48,6 +48,13 @@ export interface Property {
   price_rent: number | null;
   price_condo: number | null;
   price_iptu: number | null;
+  /**
+   * Periodicidade do aluguel: 'Mensal' | 'Diária' | 'Anual' | 'Semanal' | null.
+   * Null/Mensal = padrão histórico (mostra "/mês"). Imóveis de temporada
+   * usam 'Diária' — sem essa info, o site mostra "R$ X /mês" pra um valor
+   * que é diária e o cliente liga achando que é mensalidade.
+   */
+  rent_type: string | null;
 
   category: PropertyCategory;
   property_type: PropertyType;
@@ -96,6 +103,7 @@ export type PropertyCard = Pick<
   | 'price_sale'
   | 'price_rent'
   | 'price_condo'
+  | 'rent_type'
   | 'neighborhood'
   | 'city'
   | 'address'

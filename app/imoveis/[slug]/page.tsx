@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { getPropertyBySlug, getSimilarProperties, getNeighborhoodBySlug, getFeaturedLaunches } from '@/lib/queries';
-import { formatPrice, getDisplayTitle } from '@/lib/format';
+import { formatPrice, getDisplayTitle, rentSuffixLong } from '@/lib/format';
 import PropertyGallery from '@/components/PropertyGallery';
 import ContactForm from '@/components/ContactForm';
 import ExpandableDescription from '@/components/ExpandableDescription';
@@ -239,7 +239,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                 {mainPrice ? formatPrice(mainPrice) : 'Sob Consulta'}
               </span>
               {property.transaction_type === 'rent' && (
-                <span className="text-base font-normal text-gray-400">por mês</span>
+                <span className="text-base font-normal text-gray-400">{rentSuffixLong(property.rent_type)}</span>
               )}
             </div>
             <div className="text-xs text-gray-400 mt-1.5">
@@ -375,7 +375,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 flex items-center justify-between gap-4 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
       <div>
         <div className="text-lg font-heading font-bold text-brand-red">{mainPrice ? formatPrice(mainPrice) : 'Consulte'}</div>
-        {property.transaction_type === 'rent' && <div className="text-xs text-gray-400">por mês</div>}
+        {property.transaction_type === 'rent' && <div className="text-xs text-gray-400">{rentSuffixLong(property.rent_type)}</div>}
       </div>
       <a
         href="#contato"

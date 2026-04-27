@@ -23,15 +23,58 @@ export function formatArea(value: number | null): string {
 }
 
 /**
+ * Sufixo compacto pra preço de locação ('/mês', '/dia', '/ano', '/sem').
+ * Default '/mês' quando rent_type é null/vazio — comportamento histórico,
+ * maioria dos imóveis. Usado em cards de listagem.
+ */
+export function rentSuffix(rentType: string | null | undefined): string {
+  switch (rentType) {
+    case 'Diária':
+    case 'Diaria':
+      return '/dia';
+    case 'Semanal':
+      return '/sem';
+    case 'Anual':
+      return '/ano';
+    case 'Mensal':
+    default:
+      return '/mês';
+  }
+}
+
+/**
+ * Sufixo verboso pra preço de locação ('por mês', 'por dia', 'por ano',
+ * 'por semana'). Usado na página de detalhe onde tem espaço pra prosa.
+ */
+export function rentSuffixLong(rentType: string | null | undefined): string {
+  switch (rentType) {
+    case 'Diária':
+    case 'Diaria':
+      return 'por dia';
+    case 'Semanal':
+      return 'por semana';
+    case 'Anual':
+      return 'por ano';
+    case 'Mensal':
+    default:
+      return 'por mês';
+  }
+}
+
+/**
  * Retorna o preço principal do imóvel conforme o tipo de transação.
+ * Label de locação respeita rent_type (Diária/Mensal/Anual) — antes era
+ * hardcoded '/mês' e imóveis de temporada apareciam errados.
  */
 export function getMainPrice(property: PropertyCard, context?: 'sale' | 'rent'): {
   value: number | null;
   label: string;
 } {
+  const rentLabel = rentSuffix(property.rent_type);
+
   // Se tem contexto (página de comprar ou alugar), prioriza o preço desse contexto
   if (context === 'rent' && property.price_rent) {
-    return { value: property.price_rent, label: '/mês' };
+    return { value: property.price_rent, label: rentLabel };
   }
   if (context === 'sale' && property.price_sale) {
     return { value: property.price_sale, label: '' };
@@ -39,24 +82,24 @@ export function getMainPrice(property: PropertyCard, context?: 'sale' | 'rent'):
 
   // Fallback: comportamento padrão
   if (property.transaction_type === 'rent' && property.price_rent) {
-    return { value: property.price_rent, label: '/mês' };
+    return { value: property.price_rent, label: rentLabel };
   }
   if (property.transaction_type === 'sale_rent') {
     if (context === 'rent' && property.price_rent) {
-      return { value: property.price_rent, label: '/mês' };
+      return { value: property.price_rent, label: rentLabel };
     }
     if (property.price_sale) {
       return { value: property.price_sale, label: '' };
     }
     if (property.price_rent) {
-      return { value: property.price_rent, label: '/mês' };
+      return { value: property.price_rent, label: rentLabel };
     }
   }
   if (property.price_sale) {
     return { value: property.price_sale, label: '' };
   }
   if (property.price_rent) {
-    return { value: property.price_rent, label: '/mês' };
+    return { value: property.price_rent, label: rentLabel };
   }
   return { value: null, label: '' };
 }
