@@ -5,8 +5,17 @@ import { useRouter } from 'next/navigation';
 import { Search, ChevronDown } from 'lucide-react';
 import type { Neighborhood } from '@/types/property';
 
+interface CondoOption {
+  id: string;
+  name: string;
+  city: string | null;
+  neighborhood: string | null;
+  property_count: number;
+}
+
 interface SearchBlockProps {
   neighborhoods: Neighborhood[];
+  condominiums?: CondoOption[];
   stats: {
     total_sale: number;
     total_rent: number;
@@ -154,11 +163,14 @@ function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setP
             <button onClick={() => { setBairro(''); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs rounded-lg ${!bairro ? 'bg-gray-100 font-medium' : 'hover:bg-gray-50'}`}>
               Todos
             </button>
-            {neighborhoods.slice(0, 15).map(b => (
-              <button key={b.slug} onClick={() => { setBairro(b.name); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs rounded-lg truncate ${bairro === b.name ? 'bg-gray-100 font-medium' : 'hover:bg-gray-50'}`}>
-                {b.name}
-              </button>
-            ))}
+            {/* Alfabético — equipe pediu ordem A→Z em vez de mais populares */}
+            {[...neighborhoods]
+              .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+              .map(b => (
+                <button key={b.slug} onClick={() => { setBairro(b.name); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs rounded-lg truncate ${bairro === b.name ? 'bg-gray-100 font-medium' : 'hover:bg-gray-50'}`}>
+                  {b.name}
+                </button>
+              ))}
           </div>
         )}
       </div>
@@ -166,7 +178,7 @@ function QuickFilters({ mode, tipo, setTipo, quartos, setQuartos, precoMax, setP
   );
 }
 
-export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) {
+export default function SearchBlock({ neighborhoods, condominiums = [], stats }: SearchBlockProps) {
   const router = useRouter();
   const [mode, setMode] = useState<'comprar' | 'alugar'>('comprar');
   const [searchQuery, setSearchQuery] = useState('');
@@ -184,16 +196,30 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
       ? (b.property_count_rent ?? b.property_count)
       : (b.property_count_sale ?? b.property_count);
 
+  // Bairros mostrados no autocomplete — alfabéticos. Quando vazio, lista
+  // os primeiros 10 com imóveis (ainda alfabético, não mais "populares").
   const filteredBairros = searchQuery.length > 0
-    ? neighborhoods.filter((b) =>
-        b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        searchQuery.toUpperCase().match(/^[A-Z]{2}\d+/)
-      )
+    ? [...neighborhoods]
+        .filter((b) =>
+          b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          b.city.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
     : [...neighborhoods]
         .filter((b) => countFor(b) > 0)
-        .sort((a, b) => countFor(b) - countFor(a))
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
         .slice(0, 10);
+
+  // Condomínios filtrados pelo termo digitado (sempre alfabéticos —
+  // já vêm ordenados de getCondominiums, mas garante o sort aqui também).
+  const filteredCondos = searchQuery.length > 0
+    ? condominiums
+        .filter((c) =>
+          c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.neighborhood || '').toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .slice(0, 8) // limita pra não estourar dropdown
+    : [];
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -220,7 +246,10 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
       }
     }
 
-    // Detecta código de imóvel (ex: AP3593_INDEP, CA2532_INDEP, TE1118)
+    // Detecta código de imóvel (formato Independence: AP1234_INDEP, CA0123_INDEP,
+    // BA0001_INDEP, etc. — 2 letras + 3-5 dígitos, opcionalmente seguido de _INDEP).
+    // Match parcial (^...) é tolerante: se digitar só "AP1234" sem _INDEP, ainda
+    // detecta. /comprar e /alugar fazem .ilike('%X%') — funciona com qualquer trecho.
     const codeMatch = searchQuery.toUpperCase().match(/^[A-Z]{2}\d{3,}/);
     if (codeMatch) {
       router.push(`/${mode}?codigo=${encodeURIComponent(searchQuery.trim())}`);
@@ -298,9 +327,9 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
             <input
               type="text"
               name="busca"
-              aria-label="Buscar por bairro ou código"
+              aria-label="Buscar por bairro, condomínio ou código"
               autoComplete="off"
-              placeholder="Digite o bairro ou Código. ex: Urbanova, Satélite…"
+              placeholder="Bairro, condomínio ou código (ex: AP1234, Mônaco)"
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -313,24 +342,59 @@ export default function SearchBlock({ neighborhoods, stats }: SearchBlockProps) 
             <Search className="absolute right-4 text-gray-400 w-4 h-4 pointer-events-none" aria-hidden="true" />
           </div>
 
-          {/* Dropdown Bairros */}
-          {isDropdownOpen && filteredBairros.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-lg mt-2 max-h-60 overflow-auto z-50">
-              {filteredBairros.map((bairro) => (
-                <button
-                  key={bairro.slug}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 transition-colors border-b border-gray-50 last:border-0"
-                  onClick={() => {
-                    setSearchQuery(bairro.name);
-                    setIsDropdownOpen(false);
-                  }}
-                >
-                  <span className="font-medium text-black block">{bairro.name}</span>
-                  <span className="text-xs text-gray-400 truncate block mt-0.5">
-                    {bairro.city} · {countFor(bairro)} {countFor(bairro) === 1 ? 'imóvel' : 'imóveis'}
-                  </span>
-                </button>
-              ))}
+          {/* Dropdown — Bairros e Condomínios em seções separadas */}
+          {isDropdownOpen && (filteredBairros.length > 0 || filteredCondos.length > 0) && (
+            <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-lg mt-2 max-h-72 overflow-auto z-50">
+              {/* Seção Bairros */}
+              {filteredBairros.length > 0 && (
+                <>
+                  <div className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-50 sticky top-0">
+                    Bairros
+                  </div>
+                  {filteredBairros.map((bairro) => (
+                    <button
+                      key={bairro.slug}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm text-gray-700 transition-colors border-b border-gray-50 last:border-0"
+                      onClick={() => {
+                        // Navega direto pra rota /comprar/{slug} ou /alugar/{slug}
+                        router.push(`/${mode}/${bairro.slug}`);
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <span className="font-medium text-black block">{bairro.name}</span>
+                      <span className="text-xs text-gray-400 truncate block mt-0.5">
+                        {bairro.city} · {countFor(bairro)} {countFor(bairro) === 1 ? 'imóvel' : 'imóveis'}
+                      </span>
+                    </button>
+                  ))}
+                </>
+              )}
+
+              {/* Seção Condomínios — só aparece se tem termo digitado e algum match */}
+              {filteredCondos.length > 0 && (
+                <>
+                  <div className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-50 sticky top-0">
+                    Condomínios
+                  </div>
+                  {filteredCondos.map((condo) => (
+                    <button
+                      key={condo.id}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm text-gray-700 transition-colors border-b border-gray-50 last:border-0"
+                      onClick={() => {
+                        // Navega pra /comprar?condominio=X (ou /alugar)
+                        // — rota raiz com filtro de condomínio via URL param.
+                        router.push(`/${mode}?condominio=${encodeURIComponent(condo.id)}`);
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <span className="font-medium text-black block">{condo.name}</span>
+                      <span className="text-xs text-gray-400 truncate block mt-0.5">
+                        {[condo.neighborhood, condo.city].filter(Boolean).join(' · ')} · {condo.property_count} {condo.property_count === 1 ? 'imóvel' : 'imóveis'}
+                      </span>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </div>

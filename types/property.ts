@@ -184,6 +184,8 @@ export interface PropertyFilters {
   features?: string[];
   city?: string;
   codigo?: string;
+  /** UUID do condomínio. Filtra imóveis com properties.condominium_id = X. */
+  condominium_id?: string;
   comodidades?: string;
   sort_by?: 'price_asc' | 'price_desc' | 'newest' | 'area_desc';
   page?: number;

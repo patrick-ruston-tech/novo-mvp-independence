@@ -100,6 +100,9 @@ export async function getProperties(
   if (filters.codigo) {
     query = query.ilike('external_id', `%${filters.codigo}%`);
   }
+  if (filters.condominium_id) {
+    query = query.eq('condominium_id', filters.condominium_id);
+  }
 
   // Filtro de preço (usa price_sale ou price_rent conforme o tipo)
   const priceCol =
@@ -335,22 +338,102 @@ export async function getNeighborhoods(city?: string): Promise<Neighborhood[]> {
         }
       }
 
-      // 3. Merge e ordena pelo total dinâmico (sale + rent sem deduplicar tipo misto)
+      // 3. Merge e ordena alfabeticamente (pt-BR — respeita acentos:
+      //    Á aparece junto de A, não no final). Equipe pediu ordem
+      //    alfabética nos selects de busca por bairro.
       const enriched = neighborhoods.map((n: any) => ({
         ...n,
         property_count_sale: saleCounts[n.name] || 0,
         property_count_rent: rentCounts[n.name] || 0,
       }));
-      enriched.sort((a, b) =>
-        (b.property_count_sale + b.property_count_rent) -
-        (a.property_count_sale + a.property_count_rent)
-      );
+      enriched.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
       return enriched;
     },
     ['neighborhoods', city || 'all'],
     { revalidate: 600 }
   );
   return cached() as Promise<Neighborhood[]>;
+}
+
+/**
+ * Lista condomínios com pelo menos 1 imóvel ativo. Retorna em ordem
+ * alfabética. Usado nos componentes de busca (SearchBlock e SidebarFilters)
+ * pra autocomplete.
+ *
+ * Nota: cobertura mínima — só nome, id, bairro e cidade. Pra detalhes de
+ * um condomínio específico, query separada com select '*'.
+ */
+export interface CondominiumOption {
+  id: string;
+  name: string;
+  city: string | null;
+  neighborhood: string | null;
+  property_count: number;
+}
+
+export async function getCondominiums(city?: string): Promise<CondominiumOption[]> {
+  const cached = unstable_cache(
+    async () => {
+      const supabase = createServerClient();
+
+      // 1. Busca condomínios paginado (Supabase REST trunca em 1000)
+      const condos: any[] = [];
+      let offset = 0;
+      while (true) {
+        let q = supabase
+          .from('condominiums')
+          .select('id, name, neighborhood, city')
+          .order('name')
+          .range(offset, offset + 999);
+        if (city) q = q.eq('city', city);
+        const { data, error } = await q;
+        if (error) {
+          console.error('getCondominiums error:', error);
+          return [];
+        }
+        if (!data || data.length === 0) break;
+        condos.push(...data);
+        if (data.length < 1000) break;
+        offset += 1000;
+      }
+
+      // 2. Conta imóveis ATIVOS por condomínio. Filtra fora condos sem
+      //    imóveis publicados — não faz sentido aparecer no autocomplete.
+      const counts: Record<string, number> = {};
+      let propOffset = 0;
+      while (true) {
+        const { data: pageRows } = await supabase
+          .from('properties')
+          .select('condominium_id')
+          .eq('status', 'active')
+          .not('condominium_id', 'is', null)
+          .range(propOffset, propOffset + 999);
+        if (!pageRows || pageRows.length === 0) break;
+        for (const r of pageRows) {
+          const cid = (r as any).condominium_id;
+          if (cid) counts[cid] = (counts[cid] || 0) + 1;
+        }
+        if (pageRows.length < 1000) break;
+        propOffset += 1000;
+      }
+
+      const enriched: CondominiumOption[] = condos
+        .map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          city: c.city,
+          neighborhood: c.neighborhood,
+          property_count: counts[c.id] || 0,
+        }))
+        .filter((c) => c.property_count > 0)
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+      return enriched;
+    },
+    ['condominiums', city || 'all'],
+    { revalidate: 600 }
+  );
+  return cached() as Promise<CondominiumOption[]>;
 }
 
 /**

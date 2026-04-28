@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { SlidersHorizontal, X, Check, MapPin, Home, DollarSign, BedDouble, Bath, Car, Sparkles, Building2 } from 'lucide-react';
+import { SlidersHorizontal, X, Check, MapPin, Home, DollarSign, BedDouble, Bath, Car, Sparkles, Building2, Hash, Building } from 'lucide-react';
 import { PROPERTY_TYPE_GROUPS, FEATURES_FOR_FILTER, findPropertyTypeBySlug } from '@/lib/property-vocabulary';
 
 const CITIES = [
@@ -19,11 +19,12 @@ const GARAGES = ['1', '2', '3', '4+'];
 interface SidebarFiltersProps {
   transactionType: 'sale' | 'rent';
   neighborhoods?: { name: string; slug: string; city: string; property_count: number }[];
+  condominiums?: { id: string; name: string; city: string | null; neighborhood: string | null; property_count: number }[];
   /** Slug do bairro atual (vindo da rota /comprar/[bairro] ou /alugar/[bairro]) */
   currentNeighborhoodSlug?: string;
 }
 
-export default function SidebarFilters({ transactionType, neighborhoods = [], currentNeighborhoodSlug }: SidebarFiltersProps) {
+export default function SidebarFilters({ transactionType, neighborhoods = [], condominiums = [], currentNeighborhoodSlug }: SidebarFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -48,6 +49,10 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], cu
   const [selectedNeighborhoodSlug, setSelectedNeighborhoodSlug] = useState(
     currentNeighborhoodSlug || searchParams.get('bairro') || ''
   );
+  // Condomínio (UUID). URL: ?condominio=<uuid>
+  const [selectedCondoId, setSelectedCondoId] = useState(searchParams.get('condominio') || '');
+  // Código do imóvel (external_id). URL: ?codigo=AP1234_INDEP
+  const [codigo, setCodigo] = useState(searchParams.get('codigo') || '');
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const maxPrice = transactionType === 'sale' ? 20000000 : 15000;
@@ -70,6 +75,8 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], cu
     if (priceMin > 0) params.set('preco_min', String(priceMin));
     if (priceMax < maxPrice) params.set('preco_max', String(priceMax));
     if (selectedAmenities.length > 0) params.set('comodidades', selectedAmenities.join(','));
+    if (selectedCondoId) params.set('condominio', selectedCondoId);
+    if (codigo.trim()) params.set('codigo', codigo.trim());
 
     params.delete('pagina');
     // Quando há bairro selecionado, navega para a rota dinâmica /comprar/[slug] (ou /alugar/[slug]).
@@ -92,11 +99,13 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], cu
     setPriceMax(maxPrice);
     setSelectedAmenities([]);
     setSelectedNeighborhoodSlug('');
+    setSelectedCondoId('');
+    setCodigo('');
     router.push(baseRoute);
     setMobileOpen(false);
   }
 
-  const hasFilters = selectedCity || selectedType || selectedBedrooms || selectedSuites || selectedGarages || priceMin > 0 || priceMax < maxPrice || selectedNeighborhoodSlug || selectedAmenities.length > 0;
+  const hasFilters = selectedCity || selectedType || selectedBedrooms || selectedSuites || selectedGarages || priceMin > 0 || priceMax < maxPrice || selectedNeighborhoodSlug || selectedAmenities.length > 0 || selectedCondoId || codigo.trim();
 
   const togglePill = (value: string, current: string, setter: (v: string) => void) => {
     setter(current === value ? '' : value);
@@ -139,7 +148,21 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], cu
         </select>
       </div>
 
-      {/* Bairro */}
+      {/* Código do imóvel — busca direta */}
+      <div>
+        <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
+          <Hash className="w-3.5 h-3.5" aria-hidden="true" /> Código do imóvel
+        </label>
+        <input
+          type="text"
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
+          placeholder="Ex: AP1234"
+          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-black bg-white focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none placeholder:text-gray-400"
+        />
+      </div>
+
+      {/* Bairro — alfabético */}
       <div>
         <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
           <Building2 className="w-3.5 h-3.5" aria-hidden="true" /> Bairro
@@ -152,7 +175,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], cu
           <option value="">Todos os bairros</option>
           {neighborhoods
             .filter(b => !selectedCity || b.city === selectedCity)
-            .sort((a, b) => b.property_count - a.property_count)
+            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
             .map(b => (
               <option key={b.slug} value={b.slug}>
                 {b.name} ({b.property_count})
@@ -161,6 +184,30 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], cu
           }
         </select>
       </div>
+
+      {/* Condomínio — alfabético, só os com imóveis ativos */}
+      {condominiums.length > 0 && (
+        <div>
+          <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
+            <Building className="w-3.5 h-3.5" aria-hidden="true" /> Condomínio
+          </label>
+          <select
+            value={selectedCondoId}
+            onChange={(e) => setSelectedCondoId(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-black bg-white focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none"
+          >
+            <option value="">Todos os condomínios</option>
+            {condominiums
+              .filter(c => !selectedCity || c.city === selectedCity)
+              .map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.neighborhood ? ` · ${c.neighborhood}` : ''} ({c.property_count})
+                </option>
+              ))
+            }
+          </select>
+        </div>
+      )}
 
       {/* Tipo de imóvel — agrupado por categoria */}
       <div>

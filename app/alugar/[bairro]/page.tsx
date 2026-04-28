@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import { getProperties, getNeighborhoodBySlug, getNeighborhoods } from '@/lib/queries';
+import { getProperties, getNeighborhoodBySlug, getNeighborhoods, getCondominiums } from '@/lib/queries';
 import PropertyCard from '@/components/PropertyCard';
 import SidebarFilters from '@/components/SidebarFilters';
 import { PropertyFilters as PropertyFiltersType } from '@/types/property';
@@ -102,11 +102,15 @@ async function PropertyGrid({
 }
 
 async function SidebarWithData({ currentSlug }: { currentSlug: string }) {
-  const neighborhoods = await getNeighborhoods();
+  const [neighborhoods, condominiums] = await Promise.all([
+    getNeighborhoods(),
+    getCondominiums(),
+  ]);
   return (
     <SidebarFilters
       transactionType="rent"
       neighborhoods={neighborhoods}
+      condominiums={condominiums}
       currentNeighborhoodSlug={currentSlug}
     />
   );
@@ -161,6 +165,8 @@ export default async function AlugarBairroPage({
   const price_max = safePositiveInt(resolvedSearch.preco_max);
   const garages_min = safePositiveInt(resolvedSearch.garagens, 20);
   const comodidades = resolvedSearch.comodidades as string | undefined;
+  const codigo = resolvedSearch.codigo as string | undefined;
+  const condominium_id = resolvedSearch.condominio as string | undefined;
 
   const filters: PropertyFiltersType = {
     transaction_type: 'rent',
@@ -175,6 +181,8 @@ export default async function AlugarBairroPage({
     price_max,
     garages_min,
     comodidades,
+    codigo,
+    condominium_id,
   };
 
   if (!bairroInfo) {

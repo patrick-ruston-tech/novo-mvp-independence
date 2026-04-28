@@ -7,7 +7,7 @@ import PropertyCard from '@/components/PropertyCard';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { getNeighborhoods, getFeaturedProperties, getHomeStats, getFeaturedLaunches, getDiscoverProperties, getTestimonials } from '@/lib/queries';
+import { getNeighborhoods, getCondominiums, getFeaturedProperties, getHomeStats, getFeaturedLaunches, getDiscoverProperties, getTestimonials } from '@/lib/queries';
 import TestimonialCarousel from '@/components/TestimonialCarousel';
 
 export const metadata: Metadata = {
@@ -21,8 +21,9 @@ export const revalidate = 60;
 // ── Async section components for Suspense streaming ──
 
 async function HeroSection() {
-  const [neighborhoods, stats] = await Promise.all([
+  const [neighborhoods, condominiums, stats] = await Promise.all([
     getNeighborhoods('São José dos Campos'),
+    getCondominiums('São José dos Campos'),
     getHomeStats(),
   ]);
 
@@ -42,7 +43,7 @@ async function HeroSection() {
             </p>
           </div>
           <div className="w-full lg:w-auto flex-shrink-0">
-            <SearchBlock neighborhoods={neighborhoods} stats={stats} />
+            <SearchBlock neighborhoods={neighborhoods} condominiums={condominiums} stats={stats} />
           </div>
         </div>
       </section>
