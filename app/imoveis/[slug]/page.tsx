@@ -232,22 +232,61 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             {property.address ? `${property.address}, ` : ''}{bairroInfo?.name || property.neighborhood}, {property.city}
           </p>
 
-          {/* Price */}
-          <div className="mt-5">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl md:text-4xl font-heading font-bold text-[#EC5B13]">
-                {mainPrice ? formatPrice(mainPrice) : 'Sob Consulta'}
-              </span>
-              {property.transaction_type === 'rent' && (
-                <span className="text-base font-normal text-gray-400">{rentSuffixLong(property.rent_type)}</span>
-              )}
-            </div>
-            <div className="text-xs text-gray-400 mt-1.5">
-              {property.price_condo && <span>Condomínio: {formatPrice(property.price_condo)}</span>}
-              {property.price_condo && property.price_iptu && <span className="mx-2">·</span>}
-              {property.price_iptu && <span>IPTU: {formatPrice(property.price_iptu)}</span>}
-            </div>
-          </div>
+          {/* Price + pacote de locação (request 21 do BACKLOG) */}
+          {(() => {
+            // supabase-js retorna numeric como string. parseFloat tolera os 2.
+            const num = (v: unknown) => {
+              const n = typeof v === 'string' ? parseFloat(v) : (typeof v === 'number' ? v : NaN);
+              return Number.isFinite(n) ? n : 0;
+            };
+            // Coluna real no banco é iptu_value (estava como price_iptu errado).
+            const iptu = num((property as any).iptu_value ?? (property as any).price_iptu);
+            const condo = num(property.price_condo);
+            const rent = num(property.price_rent);
+            const isRentable = property.transaction_type === 'rent' || property.transaction_type === 'sale_rent';
+            const showPacote = isRentable && rent > 0 && (iptu > 0 || condo > 0);
+            const pacote = rent + iptu + condo;
+
+            return (
+              <div className="mt-5">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl md:text-4xl font-heading font-bold text-[#EC5B13]">
+                    {mainPrice ? formatPrice(mainPrice) : 'Sob Consulta'}
+                  </span>
+                  {property.transaction_type === 'rent' && (
+                    <span className="text-base font-normal text-gray-400">{rentSuffixLong(property.rent_type)}</span>
+                  )}
+                </div>
+                {/* Linha discreta com IPTU/Condomínio (sempre que houver) */}
+                <div className="text-xs text-gray-400 mt-1.5">
+                  {condo > 0 && <span>Condomínio: {formatPrice(condo)}</span>}
+                  {condo > 0 && iptu > 0 && <span className="mx-2">·</span>}
+                  {iptu > 0 && <span>IPTU: {formatPrice(iptu)}</span>}
+                </div>
+
+                {/* Pacote de locação destacado — aluguel + IPTU + condomínio.
+                    Só mostra pra imóveis de locação que têm pelo menos uma
+                    das taxas extras. Aparece como bloco separado pra não
+                    confundir com o preço principal. */}
+                {showPacote && (
+                  <div className="mt-4 inline-flex flex-col gap-1 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-[#EC5B13]">
+                      Pacote total mensal
+                    </div>
+                    <div className="text-xl font-heading font-bold text-black">
+                      {formatPrice(pacote)}
+                      <span className="text-sm font-normal text-gray-400">/mês</span>
+                    </div>
+                    <div className="text-[11px] text-gray-500">
+                      Aluguel {formatPrice(rent)}
+                      {condo > 0 && <> + Cond. {formatPrice(condo)}</>}
+                      {iptu > 0 && <> + IPTU {formatPrice(iptu)}</>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Features */}
           <div className="bg-gray-50 rounded-2xl p-6 mt-8 mb-8">
