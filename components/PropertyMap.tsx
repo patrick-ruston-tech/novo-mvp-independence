@@ -16,13 +16,28 @@ const icon = L.icon({
 });
 
 interface PropertyMapProps {
-  latitude: number;
-  longitude: number;
+  // Aceita number OU string porque o supabase-js retorna colunas `numeric`
+  // do Postgres como string (preserva precisão decimal). Sem essa flexibi-
+  // lidade no tipo, o callsite teria que parseFloat manualmente em todo
+  // lugar — daqui resolve uma vez só.
+  latitude: number | string | null | undefined;
+  longitude: number | string | null | undefined;
   address?: string;
 }
 
 export default function PropertyMap({ latitude, longitude, address }: PropertyMapProps) {
-  if (!latitude || !longitude) {
+  const lat = typeof latitude === 'string' ? parseFloat(latitude) : (latitude ?? NaN);
+  const lng = typeof longitude === 'string' ? parseFloat(longitude) : (longitude ?? NaN);
+
+  // Cobre os casos inválidos: null, undefined, NaN, e (0,0) — esse último
+  // geralmente significa "não preenchido" no painel (fica num ponto no
+  // Atlântico que não interessa pra ninguém).
+  const invalid =
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    (lat === 0 && lng === 0);
+
+  if (invalid) {
     return (
       <div className="bg-gray-50 rounded-2xl h-72 flex flex-col items-center justify-center border border-gray-100">
         <span className="text-sm text-gray-400">Localização não disponível</span>
@@ -33,7 +48,7 @@ export default function PropertyMap({ latitude, longitude, address }: PropertyMa
   return (
     <div className="rounded-2xl overflow-hidden border border-gray-100 h-72">
       <MapContainer
-        center={[latitude, longitude]}
+        center={[lat, lng]}
         zoom={15}
         scrollWheelZoom={false}
         style={{ height: '100%', width: '100%' }}
@@ -42,7 +57,7 @@ export default function PropertyMap({ latitude, longitude, address }: PropertyMa
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Marker position={[latitude, longitude]} icon={icon}>
+        <Marker position={[lat, lng]} icon={icon}>
           {address && <Popup>{address}</Popup>}
         </Marker>
       </MapContainer>

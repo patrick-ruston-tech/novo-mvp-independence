@@ -12,8 +12,9 @@ const PropertyMap = dynamic(() => import('./PropertyMap'), {
 });
 
 interface PropertyMapWrapperProps {
-  latitude: number;
-  longitude: number;
+  // Aceita string também — supabase-js retorna numeric como string. Idem PropertyMap.
+  latitude: number | string | null | undefined;
+  longitude: number | string | null | undefined;
   address?: string;
 }
 
