@@ -65,11 +65,17 @@ export async function getProperties(
     .eq('is_published', true);
 
   // Filtro principal: tipo de transação
-  // sale_rent aparece tanto em comprar quanto em alugar
-  if (transaction_type === 'sale') {
-    query = query.in('transaction_type', ['sale', 'sale_rent']);
-  } else if (transaction_type === 'rent') {
-    query = query.in('transaction_type', ['rent', 'sale_rent']);
+  // sale_rent aparece tanto em comprar quanto em alugar.
+  // Exceção: quando o usuário busca por CÓDIGO específico (ex: AP1234),
+  // ignoramos o filtro de transação porque o código já identifica o
+  // imóvel exato — sem isso, código de imóvel pra locação digitado na
+  // aba "Comprar" retornava vazio e parecia bug.
+  if (!filters.codigo) {
+    if (transaction_type === 'sale') {
+      query = query.in('transaction_type', ['sale', 'sale_rent']);
+    } else if (transaction_type === 'rent') {
+      query = query.in('transaction_type', ['rent', 'sale_rent']);
+    }
   }
 
   // Filtros opcionais
