@@ -54,11 +54,15 @@ export async function getProperties(
     per_page = 12,
   } = filters;
 
-  // Query base: apenas imóveis ativos
+  // Query base: imóveis publicados (toggle "Mostrar no site" ligado).
+  // Antes filtrávamos por status='active', mas isso excluía imóveis válidos
+  // como reservados/em negociação que o corretor optou por manter visíveis,
+  // e mantia visíveis imóveis com is_published=false (toggle desligado).
+  // is_published é a fonte de verdade do que aparece no site.
   let query = supabase
     .from('properties')
     .select(CARD_FIELDS, { count: 'exact' })
-    .eq('status', 'active');
+    .eq('is_published', true);
 
   // Filtro principal: tipo de transação
   // sale_rent aparece tanto em comprar quanto em alugar
@@ -191,7 +195,7 @@ export const getPropertyBySlug = cache(async function getPropertyBySlug(
     .from('properties')
     .select('*')
     .eq('slug', slug)
-    .eq('status', 'active')
+    .eq('is_published', true)
     .single();
 
   if (error) {
@@ -212,7 +216,7 @@ export const getFeaturedProperties = unstable_cache(
     const { data, error } = await supabase
       .from('properties')
       .select(CARD_FIELDS)
-      .eq('status', 'active')
+      .eq('is_published', true)
       .eq('featured', true)
       .limit(limit);
 
@@ -239,7 +243,7 @@ export async function getSimilarProperties(
   const { data, error } = await supabase
     .from('properties')
     .select(CARD_FIELDS)
-    .eq('status', 'active')
+    .eq('is_published', true)
     .eq('neighborhood', property.neighborhood)
     .neq('id', property.id)
     .in(
@@ -268,7 +272,7 @@ export async function getAllPropertySlugs(): Promise<string[]> {
   const { data, error } = await supabase
     .from('properties')
     .select('slug')
-    .eq('status', 'active');
+    .eq('is_published', true);
 
   if (error) {
     console.error('getAllPropertySlugs error:', error);
@@ -314,7 +318,7 @@ export async function getNeighborhoods(city?: string): Promise<Neighborhood[]> {
         let q = supabase
           .from('properties')
           .select('neighborhood, transaction_type')
-          .eq('status', 'active')
+          .eq('is_published', true)
           .range(offset, offset + 999);
         if (city) q = q.eq('city', city);
         const { data: pageRows } = await q;
@@ -405,7 +409,7 @@ export async function getCondominiums(city?: string): Promise<CondominiumOption[
         const { data: pageRows } = await supabase
           .from('properties')
           .select('condominium_id')
-          .eq('status', 'active')
+          .eq('is_published', true)
           .not('condominium_id', 'is', null)
           .range(propOffset, propOffset + 999);
         if (!pageRows || pageRows.length === 0) break;
@@ -533,8 +537,8 @@ export const getHomeStats = unstable_cache(
   async () => {
     const supabase = createServerClient();
     const [saleRes, rentRes, neighRes] = await Promise.all([
-      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('status', 'active').in('transaction_type', ['sale', 'sale_rent']),
-      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('status', 'active').in('transaction_type', ['rent', 'sale_rent']),
+      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('is_published', true).in('transaction_type', ['sale', 'sale_rent']),
+      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('is_published', true).in('transaction_type', ['rent', 'sale_rent']),
       supabase.from('neighborhoods').select('*', { count: 'exact', head: true }),
     ]);
     return {
@@ -617,7 +621,7 @@ export async function getLaunchProperties(launchId: string): Promise<any[]> {
     .from('properties')
     .select(CARD_FIELDS)
     .eq('launch_id', launchId)
-    .eq('status', 'active')
+    .eq('is_published', true)
     .order('price_sale', { ascending: true });
 
   if (error) {
@@ -660,7 +664,7 @@ export async function getDiscoverProperties(): Promise<any[]> {
   const { data, error } = await supabase
     .from('properties')
     .select(CARD_FIELDS)
-    .eq('status', 'active')
+    .eq('is_published', true)
     .eq('is_discover', true)
     .order('created_at', { ascending: false });
 
