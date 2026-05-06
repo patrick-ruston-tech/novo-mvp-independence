@@ -30,6 +30,19 @@ const CARD_FIELDS = `
 `;
 
 /**
+ * Status que podem aparecer no site público.
+ *
+ * Regra (definida pela equipe Independence):
+ *   - is_published=true é necessário (toggle "Mostrar no site")
+ *   - status precisa ser ativo: anúncio aberto, reservado ou em negociação
+ *
+ * Imóveis vendidos, locados, inativos, recusados, em aprovação ou pausados
+ * são escondidos mesmo se o toggle estiver ligado — caso comum: corretor
+ * inativa imóvel mas esquece de desligar o toggle.
+ */
+const PUBLIC_STATUSES = ['active', 'reserved', 'negotiating'] as const;
+
+/**
  * Lista imóveis com filtros e paginação.
  * Usado nas páginas /comprar e /alugar.
  */
@@ -62,7 +75,7 @@ export async function getProperties(
   let query = supabase
     .from('properties')
     .select(CARD_FIELDS, { count: 'exact' })
-    .eq('is_published', true);
+    .eq('is_published', true).in('status', PUBLIC_STATUSES);
 
   // Filtro principal: tipo de transação
   // sale_rent aparece tanto em comprar quanto em alugar.
@@ -201,7 +214,7 @@ export const getPropertyBySlug = cache(async function getPropertyBySlug(
     .from('properties')
     .select('*')
     .eq('slug', slug)
-    .eq('is_published', true)
+    .eq('is_published', true).in('status', PUBLIC_STATUSES)
     .single();
 
   if (error) {
@@ -222,7 +235,7 @@ export const getFeaturedProperties = unstable_cache(
     const { data, error } = await supabase
       .from('properties')
       .select(CARD_FIELDS)
-      .eq('is_published', true)
+      .eq('is_published', true).in('status', PUBLIC_STATUSES)
       .eq('featured', true)
       .limit(limit);
 
@@ -249,7 +262,7 @@ export async function getSimilarProperties(
   const { data, error } = await supabase
     .from('properties')
     .select(CARD_FIELDS)
-    .eq('is_published', true)
+    .eq('is_published', true).in('status', PUBLIC_STATUSES)
     .eq('neighborhood', property.neighborhood)
     .neq('id', property.id)
     .in(
@@ -278,7 +291,7 @@ export async function getAllPropertySlugs(): Promise<string[]> {
   const { data, error } = await supabase
     .from('properties')
     .select('slug')
-    .eq('is_published', true);
+    .eq('is_published', true).in('status', PUBLIC_STATUSES);
 
   if (error) {
     console.error('getAllPropertySlugs error:', error);
@@ -324,7 +337,7 @@ export async function getNeighborhoods(city?: string): Promise<Neighborhood[]> {
         let q = supabase
           .from('properties')
           .select('neighborhood, transaction_type')
-          .eq('is_published', true)
+          .eq('is_published', true).in('status', PUBLIC_STATUSES)
           .range(offset, offset + 999);
         if (city) q = q.eq('city', city);
         const { data: pageRows } = await q;
@@ -415,7 +428,7 @@ export async function getCondominiums(city?: string): Promise<CondominiumOption[
         const { data: pageRows } = await supabase
           .from('properties')
           .select('condominium_id')
-          .eq('is_published', true)
+          .eq('is_published', true).in('status', PUBLIC_STATUSES)
           .not('condominium_id', 'is', null)
           .range(propOffset, propOffset + 999);
         if (!pageRows || pageRows.length === 0) break;
@@ -543,8 +556,8 @@ export const getHomeStats = unstable_cache(
   async () => {
     const supabase = createServerClient();
     const [saleRes, rentRes, neighRes] = await Promise.all([
-      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('is_published', true).in('transaction_type', ['sale', 'sale_rent']),
-      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('is_published', true).in('transaction_type', ['rent', 'sale_rent']),
+      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('is_published', true).in('status', PUBLIC_STATUSES).in('transaction_type', ['sale', 'sale_rent']),
+      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('is_published', true).in('status', PUBLIC_STATUSES).in('transaction_type', ['rent', 'sale_rent']),
       supabase.from('neighborhoods').select('*', { count: 'exact', head: true }),
     ]);
     return {
@@ -627,7 +640,7 @@ export async function getLaunchProperties(launchId: string): Promise<any[]> {
     .from('properties')
     .select(CARD_FIELDS)
     .eq('launch_id', launchId)
-    .eq('is_published', true)
+    .eq('is_published', true).in('status', PUBLIC_STATUSES)
     .order('price_sale', { ascending: true });
 
   if (error) {
@@ -670,7 +683,7 @@ export async function getDiscoverProperties(): Promise<any[]> {
   const { data, error } = await supabase
     .from('properties')
     .select(CARD_FIELDS)
-    .eq('is_published', true)
+    .eq('is_published', true).in('status', PUBLIC_STATUSES)
     .eq('is_discover', true)
     .order('created_at', { ascending: false });
 
