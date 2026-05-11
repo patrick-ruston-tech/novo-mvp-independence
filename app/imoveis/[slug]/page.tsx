@@ -70,7 +70,6 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     getFeaturedLaunches(5),
   ]);
   const title = getDisplayTitle(property);
-  const mainPrice = property.transaction_type === 'sale' ? property.price_sale : property.price_rent;
 
   const images = property.images && property.images.length > 0
     ? getWatermarkedImages(property.images)
@@ -232,44 +231,84 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             {property.address ? `${property.address}, ` : ''}{bairroInfo?.name || property.neighborhood}, {property.city}
           </p>
 
-          {/* Price + pacote de locação (request 21 do BACKLOG) */}
+          {/* Preços + pacote de locação.
+              Antes mostrava só price_sale OR price_rent. Quando o imóvel
+              é venda+locação ('sale_rent'), o site mostrava SÓ a locação
+              porque o ternário caía no else — usuário interessado em
+              compra não via o valor de venda. Agora cada transação
+              disponível renderiza como bloco separado. */}
           {(() => {
             // supabase-js retorna numeric como string. parseFloat tolera os 2.
             const num = (v: unknown) => {
               const n = typeof v === 'string' ? parseFloat(v) : (typeof v === 'number' ? v : NaN);
               return Number.isFinite(n) ? n : 0;
             };
-            // Coluna real no banco é iptu_value (estava como price_iptu errado).
+            // Coluna real no banco é iptu_value (price_iptu era nome errado).
             const iptu = num((property as any).iptu_value ?? (property as any).price_iptu);
             const condo = num(property.price_condo);
+            const sale = num(property.price_sale);
             const rent = num(property.price_rent);
-            const isRentable = property.transaction_type === 'rent' || property.transaction_type === 'sale_rent';
-            const showPacote = isRentable && rent > 0 && (iptu > 0 || condo > 0);
+            const tx = property.transaction_type;
+            const isSaleVisible = (tx === 'sale' || tx === 'sale_rent') && sale > 0;
+            const isRentVisible = (tx === 'rent' || tx === 'sale_rent') && rent > 0;
+            const showPacote = isRentVisible && (iptu > 0 || condo > 0);
             const pacote = rent + iptu + condo;
 
+            // Se nem venda nem locação têm valor cadastrado, mostra "Sob Consulta"
+            const isEmpty = !isSaleVisible && !isRentVisible;
+
             return (
-              <div className="mt-5">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl md:text-4xl font-heading font-bold text-[#EC5B13]">
-                    {mainPrice ? formatPrice(mainPrice) : 'Sob Consulta'}
-                  </span>
-                  {property.transaction_type === 'rent' && (
-                    <span className="text-base font-normal text-gray-400">{rentSuffixLong(property.rent_type)}</span>
+              <div className="mt-5 space-y-3">
+                {/* Bloco principal: preços de venda e/ou locação */}
+                <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+                  {isSaleVisible && (
+                    <div>
+                      {/* Label só aparece quando tem AMBOS (pra distinguir) */}
+                      {isRentVisible && (
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                          Venda
+                        </div>
+                      )}
+                      <span className="text-3xl md:text-4xl font-heading font-bold text-[#EC5B13]">
+                        {formatPrice(sale)}
+                      </span>
+                    </div>
+                  )}
+                  {isRentVisible && (
+                    <div>
+                      {isSaleVisible && (
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                          Locação
+                        </div>
+                      )}
+                      <span className="text-3xl md:text-4xl font-heading font-bold text-[#EC5B13]">
+                        {formatPrice(rent)}
+                      </span>
+                      <span className="text-base font-normal text-gray-400">{rentSuffixLong(property.rent_type)}</span>
+                    </div>
+                  )}
+                  {isEmpty && (
+                    <span className="text-3xl md:text-4xl font-heading font-bold text-[#EC5B13]">
+                      Sob Consulta
+                    </span>
                   )}
                 </div>
+
                 {/* Linha discreta com IPTU/Condomínio (sempre que houver) */}
-                <div className="text-xs text-gray-400 mt-1.5">
-                  {condo > 0 && <span>Condomínio: {formatPrice(condo)}</span>}
-                  {condo > 0 && iptu > 0 && <span className="mx-2">·</span>}
-                  {iptu > 0 && <span>IPTU: {formatPrice(iptu)}</span>}
-                </div>
+                {(condo > 0 || iptu > 0) && (
+                  <div className="text-xs text-gray-400">
+                    {condo > 0 && <span>Condomínio: {formatPrice(condo)}</span>}
+                    {condo > 0 && iptu > 0 && <span className="mx-2">·</span>}
+                    {iptu > 0 && <span>IPTU: {formatPrice(iptu)}</span>}
+                  </div>
+                )}
 
                 {/* Pacote de locação destacado — aluguel + IPTU + condomínio.
-                    Só mostra pra imóveis de locação que têm pelo menos uma
-                    das taxas extras. Aparece como bloco separado pra não
-                    confundir com o preço principal. */}
+                    Só pra imóveis com locação visível e ao menos uma taxa
+                    extra. Em sale_rent também aparece (deixa claro o custo
+                    mensal pra quem vai alugar). */}
                 {showPacote && (
-                  <div className="mt-4 inline-flex flex-col gap-1 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
+                  <div className="inline-flex flex-col gap-1 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
                     <div className="text-[11px] font-semibold uppercase tracking-wider text-[#EC5B13]">
                       Pacote total mensal
                     </div>
@@ -412,10 +451,33 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
     {/* Mobile Sticky Bottom Bar */}
     <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 flex items-center justify-between gap-4 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-      <div>
-        <div className="text-lg font-heading font-bold text-brand-red">{mainPrice ? formatPrice(mainPrice) : 'Consulte'}</div>
-        {property.transaction_type === 'rent' && <div className="text-xs text-gray-400">{rentSuffixLong(property.rent_type)}</div>}
-      </div>
+      {(() => {
+        // Em mobile a tela é apertada, então mostra só 1 preço. Pra imóveis
+        // venda+locação, priorizamos VENDA (valor maior, mais relevante pra
+        // captar atenção). O usuário vê o segundo no scroll up.
+        const num = (v: unknown) => {
+          const n = typeof v === 'string' ? parseFloat(v) : (typeof v === 'number' ? v : NaN);
+          return Number.isFinite(n) ? n : 0;
+        };
+        const sale = num(property.price_sale);
+        const rent = num(property.price_rent);
+        const showSale = (property.transaction_type === 'sale' || property.transaction_type === 'sale_rent') && sale > 0;
+        const showRent = property.transaction_type === 'rent' && rent > 0;
+        return (
+          <div>
+            {showSale ? (
+              <div className="text-lg font-heading font-bold text-brand-red">{formatPrice(sale)}</div>
+            ) : showRent ? (
+              <>
+                <div className="text-lg font-heading font-bold text-brand-red">{formatPrice(rent)}</div>
+                <div className="text-xs text-gray-400">{rentSuffixLong(property.rent_type)}</div>
+              </>
+            ) : (
+              <div className="text-lg font-heading font-bold text-brand-red">Consulte</div>
+            )}
+          </div>
+        );
+      })()}
       <a
         href="#contato"
         className="bg-brand-red hover:bg-brand-dark-red text-white rounded-xl px-6 py-3 font-semibold text-sm whitespace-nowrap transition-colors"
