@@ -21,9 +21,13 @@ export const revalidate = 60;
 // ── Async section components for Suspense streaming ──
 
 async function HeroSection() {
+  // Removido filtro hardcoded de "São José dos Campos" — antes só bairros
+  // e condomínios de SJC apareciam no busca da home, então imóveis em
+  // Jacareí/Caçapava/Jambeiro/etc. ficavam invisíveis ali. Agora puxa
+  // tudo que tem imóvel publicado, independente da cidade.
   const [neighborhoods, condominiums, stats] = await Promise.all([
-    getNeighborhoods('São José dos Campos'),
-    getCondominiums('São José dos Campos'),
+    getNeighborhoods(),
+    getCondominiums(),
     getHomeStats(),
   ]);
 

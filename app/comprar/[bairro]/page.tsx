@@ -25,14 +25,18 @@ export async function generateMetadata(
   const resolvedParams = await params;
   const neighborhood = await getNeighborhoodBySlug(resolvedParams.bairro);
   const name = neighborhood?.name || resolvedParams.bairro.replace(/-/g, ' ');
+  // Cidade vinha hardcoded como "São José dos Campos" — quebrava SEO de
+  // bairros em Jacareí/Caçapava/etc. Agora puxa do bairro; fallback pra
+  // SJC se o bairro não tiver cidade cadastrada (raro).
+  const city = neighborhood?.city || 'São José dos Campos';
 
   return {
-    title: `Imóveis à Venda em ${name}, São José dos Campos`,
+    title: `Imóveis à Venda em ${name}, ${city}`,
     description: `Encontre casas, apartamentos e terrenos à venda em ${name}. Fotos, preços e condições de financiamento. Atendimento personalizado Independence Imóveis.`,
     alternates: { canonical: `https://independenceimoveis.com.br/comprar/${resolvedParams.bairro}` },
     openGraph: {
       title: `Imóveis à Venda em ${name} | Independence`,
-      description: `Encontre imóveis à venda em ${name}, São José dos Campos.`,
+      description: `Encontre imóveis à venda em ${name}, ${city}.`,
       type: 'website',
     },
   };

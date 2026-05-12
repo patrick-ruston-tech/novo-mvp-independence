@@ -25,14 +25,16 @@ export async function generateMetadata(
   const resolvedParams = await params;
   const neighborhood = await getNeighborhoodBySlug(resolvedParams.bairro);
   const name = neighborhood?.name || resolvedParams.bairro.replace(/-/g, ' ');
+  // Cidade dinâmica baseada no bairro (antes era hardcoded SJC).
+  const city = neighborhood?.city || 'São José dos Campos';
 
   return {
-    title: `Imóveis para Alugar em ${name}, São José dos Campos`,
+    title: `Imóveis para Alugar em ${name}, ${city}`,
     description: `Encontre casas e apartamentos para alugar em ${name}. Locação residencial e comercial com atendimento personalizado Independence Imóveis.`,
     alternates: { canonical: `https://independenceimoveis.com.br/alugar/${resolvedParams.bairro}` },
     openGraph: {
       title: `Imóveis para Alugar em ${name} | Independence`,
-      description: `Encontre imóveis para alugar em ${name}, São José dos Campos.`,
+      description: `Encontre imóveis para alugar em ${name}, ${city}.`,
       type: 'website',
     },
   };
