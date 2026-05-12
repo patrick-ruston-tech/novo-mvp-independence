@@ -226,9 +226,23 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               </span>
             </div>
           )}
+          {/* Endereço — montado a partir de street + street_number +
+              complement + neighborhood + city. Antes usava o campo `address`
+              isolado, que está deprecado e quase sempre null nos cadastros
+              novos do painel — o endereço não aparecia. */}
           <p className="text-sm text-gray-400 flex items-center gap-1.5 mt-2">
             <MapPin className="w-3.5 h-3.5 text-[#EC5B13]" />
-            {property.address ? `${property.address}, ` : ''}{bairroInfo?.name || property.neighborhood}, {property.city}
+            {(() => {
+              const p = property as any;
+              const ruaENumero = [p.street || p.address, p.street_number].filter(Boolean).join(', ');
+              const partes = [
+                ruaENumero,
+                p.complement,
+                bairroInfo?.name || property.neighborhood,
+                property.city,
+              ].filter(Boolean);
+              return partes.join(', ');
+            })()}
           </p>
 
           {/* Preços + pacote de locação.
@@ -378,16 +392,36 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             </>
           )}
 
-          {/* Comodidades */}
-          {property.features && property.features.length > 0 && (
-            <div>
-              <h2 className="text-lg font-heading font-bold text-black mb-4 flex items-center gap-2">
-                <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
-                Comodidades
-              </h2>
-              <AmenitiesList features={property.features} />
-            </div>
-          )}
+          {/* Comodidades — consolida as 8 colunas amenities_* num único array.
+              Antes o site tentava ler `property.features` (campo legado que
+              já não é populado), então a seção nunca aparecia mesmo com
+              comodidades cadastradas no painel. */}
+          {(() => {
+            const amenities: string[] = [
+              ...((property as any).amenities_items || []),
+              ...((property as any).amenities_characteristics || []),
+              ...((property as any).amenities_leisure || []),
+              ...((property as any).amenities_closets || []),
+              ...((property as any).amenities_heating || []),
+              ...((property as any).amenities_flooring || []),
+              ...((property as any).amenities_condo_leisure || []),
+              ...((property as any).amenities_condo_infra || []),
+              // Fallback pro campo legado se ainda existir em algum imóvel
+              ...(property.features || []),
+            ];
+            // Dedup pra evitar repetição se algum amenity caiu em 2 categorias
+            const unique = Array.from(new Set(amenities));
+            if (unique.length === 0) return null;
+            return (
+              <div>
+                <h2 className="text-lg font-heading font-bold text-black mb-4 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
+                  Comodidades
+                </h2>
+                <AmenitiesList features={unique} />
+              </div>
+            );
+          })()}
 
           <div className="h-px bg-gray-100 my-8"></div>
 
@@ -397,10 +431,17 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
               Localização
             </h2>
+            {/* address montado igual ao header — antes era property.address
+                (deprecado, sempre null), o popup do mapa ficava com ", Bairro, Cidade". */}
             <PropertyMapWrapper
               latitude={property.latitude ?? 0}
               longitude={property.longitude ?? 0}
-              address={`${property.address || ''}, ${property.neighborhood}, ${property.city}`}
+              address={[
+                (property as any).street || property.address,
+                (property as any).street_number,
+                property.neighborhood,
+                property.city,
+              ].filter(Boolean).join(', ')}
             />
             {bairroInfo?.description && (
               <p className="text-sm text-gray-500 mt-4 leading-relaxed">
