@@ -226,23 +226,12 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               </span>
             </div>
           )}
-          {/* Endereço — montado a partir de street + street_number +
-              complement + neighborhood + city. Antes usava o campo `address`
-              isolado, que está deprecado e quase sempre null nos cadastros
-              novos do painel — o endereço não aparecia. */}
+          {/* Endereço resumido — bairro + cidade. Não expomos rua/número/
+              complemento publicamente pra não dar localização exata pra
+              concorrência sem qualificação do lead. */}
           <p className="text-sm text-gray-400 flex items-center gap-1.5 mt-2">
             <MapPin className="w-3.5 h-3.5 text-[#EC5B13]" />
-            {(() => {
-              const p = property as any;
-              const ruaENumero = [p.street || p.address, p.street_number].filter(Boolean).join(', ');
-              const partes = [
-                ruaENumero,
-                p.complement,
-                bairroInfo?.name || property.neighborhood,
-                property.city,
-              ].filter(Boolean);
-              return partes.join(', ');
-            })()}
+            {bairroInfo?.name || property.neighborhood}, {property.city}
           </p>
 
           {/* Preços + pacote de locação.
