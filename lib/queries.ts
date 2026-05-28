@@ -95,6 +95,10 @@ export async function getProperties(
   if (neighborhood) {
     query = query.eq('neighborhood', neighborhood);
   }
+  // Zona — properties.zone guarda o NOME da zona (string).
+  if (filters.zone) {
+    query = query.eq('zone', filters.zone);
+  }
   if (property_type) {
     // Resolve o slug (PT canônico ou legado EN) para o(s) valor(es) armazenado(s)
     // no banco via property-vocabulary. Se o slug não for conhecido, faz match
@@ -212,7 +216,9 @@ export const getPropertyBySlug = cache(async function getPropertyBySlug(
 
   const { data, error } = await supabase
     .from('properties')
-    .select('*')
+    // JOIN com condominium pra exibir o nome do condomínio no anúncio
+    // (a equipe pediu). condominium_id é FK; o nome vem da tabela condominiums.
+    .select('*, condominium:condominium_id (id, name)')
     .eq('slug', slug)
     .eq('is_published', true).in('status', PUBLIC_STATUSES)
     .single();
@@ -458,6 +464,46 @@ export async function getCondominiums(city?: string): Promise<CondominiumOption[
   );
   return cached() as Promise<CondominiumOption[]>;
 }
+
+/**
+ * Lista zonas ativas pra popular o filtro de zona no site.
+ * Retorna só zonas que têm ao menos 1 imóvel publicado (evita zona vazia
+ * aparecendo no dropdown). Ordenado alfabético pt-BR.
+ */
+export interface ZoneOption {
+  name: string;
+  property_count: number;
+}
+
+export const getZones = unstable_cache(
+  async (): Promise<ZoneOption[]> => {
+    const supabase = createServerClient();
+    // Conta imóveis publicados por zona (properties.zone = nome da zona),
+    // paginando porque Supabase REST corta em 1000.
+    const counts: Record<string, number> = {};
+    let offset = 0;
+    while (true) {
+      const { data } = await supabase
+        .from('properties')
+        .select('zone')
+        .eq('is_published', true).in('status', PUBLIC_STATUSES)
+        .not('zone', 'is', null)
+        .range(offset, offset + 999);
+      if (!data || data.length === 0) break;
+      for (const r of data) {
+        const z = (r as any).zone;
+        if (z) counts[z] = (counts[z] || 0) + 1;
+      }
+      if (data.length < 1000) break;
+      offset += 1000;
+    }
+    return Object.entries(counts)
+      .map(([name, property_count]) => ({ name, property_count }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  },
+  ['zones-with-count'],
+  { revalidate: 600 }
+);
 
 /**
  * Busca bairro pelo slug.

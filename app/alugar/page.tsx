@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { getProperties, getNeighborhoods, getCondominiums } from '@/lib/queries';
+import { getProperties, getNeighborhoods, getCondominiums, getZones } from '@/lib/queries';
 import PropertyCard from '@/components/PropertyCard';
 import SidebarFilters from '@/components/SidebarFilters';
 import Pagination from '@/components/Pagination';
@@ -76,11 +76,12 @@ async function PropertyGrid({
 }
 
 async function SidebarWithData() {
-  const [neighborhoods, condominiums] = await Promise.all([
+  const [neighborhoods, condominiums, zones] = await Promise.all([
     getNeighborhoods(),
     getCondominiums(),
+    getZones(),
   ]);
-  return <SidebarFilters transactionType="rent" neighborhoods={neighborhoods} condominiums={condominiums} />;
+  return <SidebarFilters transactionType="rent" neighborhoods={neighborhoods} condominiums={condominiums} zones={zones} />;
 }
 
 function GridSkeleton() {
@@ -129,6 +130,7 @@ export default async function AlugarPage({
   const comodidades = resolvedParams.comodidades as string | undefined;
   const codigo = resolvedParams.codigo as string | undefined;
   const condominium_id = resolvedParams.condominio as string | undefined;
+  const zone = resolvedParams.zona as string | undefined;
 
   const filters: PropertyFiltersType = {
     transaction_type: 'rent',
@@ -145,6 +147,7 @@ export default async function AlugarPage({
     comodidades,
     codigo,
     condominium_id,
+    zone,
   };
 
   return (

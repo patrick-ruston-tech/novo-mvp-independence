@@ -175,6 +175,8 @@ export interface PropertySubmission {
 export interface PropertyFilters {
   transaction_type: TransactionType;
   neighborhood?: string;
+  /** Nome da zona (properties.zone guarda o nome, não id). */
+  zone?: string;
   property_type?: PropertyType;
   bedrooms_min?: number;
   suites_min?: number;

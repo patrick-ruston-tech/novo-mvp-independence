@@ -20,11 +20,13 @@ interface SidebarFiltersProps {
   transactionType: 'sale' | 'rent';
   neighborhoods?: { name: string; slug: string; city: string; property_count: number }[];
   condominiums?: { id: string; name: string; city: string | null; neighborhood: string | null; property_count: number }[];
+  /** Zonas disponíveis (nome + contagem). Filtro por ?zona=<nome>. */
+  zones?: { name: string; property_count: number }[];
   /** Slug do bairro atual (vindo da rota /comprar/[bairro] ou /alugar/[bairro]) */
   currentNeighborhoodSlug?: string;
 }
 
-export default function SidebarFilters({ transactionType, neighborhoods = [], condominiums = [], currentNeighborhoodSlug }: SidebarFiltersProps) {
+export default function SidebarFilters({ transactionType, neighborhoods = [], condominiums = [], zones = [], currentNeighborhoodSlug }: SidebarFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -51,6 +53,8 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], co
   );
   // Condomínio (UUID). URL: ?condominio=<uuid>
   const [selectedCondoId, setSelectedCondoId] = useState(searchParams.get('condominio') || '');
+  // Zona (nome). URL: ?zona=<nome>
+  const [selectedZone, setSelectedZone] = useState(searchParams.get('zona') || '');
   // Código do imóvel (external_id). URL: ?codigo=AP1234_INDEP
   const [codigo, setCodigo] = useState(searchParams.get('codigo') || '');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -76,6 +80,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], co
     if (priceMax < maxPrice) params.set('preco_max', String(priceMax));
     if (selectedAmenities.length > 0) params.set('comodidades', selectedAmenities.join(','));
     if (selectedCondoId) params.set('condominio', selectedCondoId);
+    if (selectedZone) params.set('zona', selectedZone);
     if (codigo.trim()) params.set('codigo', codigo.trim());
 
     params.delete('pagina');
@@ -100,12 +105,13 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], co
     setSelectedAmenities([]);
     setSelectedNeighborhoodSlug('');
     setSelectedCondoId('');
+    setSelectedZone('');
     setCodigo('');
     router.push(baseRoute);
     setMobileOpen(false);
   }
 
-  const hasFilters = selectedCity || selectedType || selectedBedrooms || selectedSuites || selectedGarages || priceMin > 0 || priceMax < maxPrice || selectedNeighborhoodSlug || selectedAmenities.length > 0 || selectedCondoId || codigo.trim();
+  const hasFilters = selectedCity || selectedType || selectedBedrooms || selectedSuites || selectedGarages || priceMin > 0 || priceMax < maxPrice || selectedNeighborhoodSlug || selectedAmenities.length > 0 || selectedCondoId || selectedZone || codigo.trim();
 
   const togglePill = (value: string, current: string, setter: (v: string) => void) => {
     setter(current === value ? '' : value);
@@ -184,6 +190,27 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], co
           }
         </select>
       </div>
+
+      {/* Zona — agrupa bairros por região. Filtra por properties.zone (nome). */}
+      {zones.length > 0 && (
+        <div>
+          <label className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 mb-3">
+            <MapPin className="w-3.5 h-3.5" aria-hidden="true" /> Zona
+          </label>
+          <select
+            value={selectedZone}
+            onChange={(e) => setSelectedZone(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-black bg-white focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none"
+          >
+            <option value="">Todas as zonas</option>
+            {zones.map(z => (
+              <option key={z.name} value={z.name}>
+                {z.name} ({z.property_count})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Condomínio — alfabético, só os com imóveis ativos */}
       {condominiums.length > 0 && (

@@ -7,7 +7,7 @@ import PropertyGallery from '@/components/PropertyGallery';
 import ContactForm from '@/components/ContactForm';
 import ExpandableDescription from '@/components/ExpandableDescription';
 import PropertyCard from '@/components/PropertyCard';
-import { Bed, Bath, Car, Maximize, MapPin } from 'lucide-react';
+import { Bed, Bath, Car, Maximize, MapPin, Building2 } from 'lucide-react';
 import AmenitiesList from '@/components/AmenitiesList';
 import PropertyMapWrapper from '@/components/PropertyMapWrapper';
 import LaunchMiniBanner from '@/components/LaunchMiniBanner';
@@ -233,6 +233,20 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <MapPin className="w-3.5 h-3.5 text-[#EC5B13]" />
             {bairroInfo?.name || property.neighborhood}, {property.city}
           </p>
+          {/* Nome do condomínio — vem do JOIN em getPropertyBySlug.
+              Supabase pode retornar objeto OU array dependendo de como
+              infere a relação; cobre os dois. */}
+          {(() => {
+            const condo = (property as any).condominium;
+            const condoName = Array.isArray(condo) ? condo[0]?.name : condo?.name;
+            if (!condoName) return null;
+            return (
+              <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-1">
+                <Building2 className="w-3.5 h-3.5 text-[#EC5B13]" />
+                {condoName}
+              </p>
+            );
+          })()}
 
           {/* Preços + pacote de locação.
               Antes mostrava só price_sale OR price_rent. Quando o imóvel

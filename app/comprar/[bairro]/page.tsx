@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import { getProperties, getNeighborhoodBySlug, getNeighborhoods, getCondominiums } from '@/lib/queries';
+import { getProperties, getNeighborhoodBySlug, getNeighborhoods, getCondominiums, getZones } from '@/lib/queries';
 import PropertyCard from '@/components/PropertyCard';
 import SidebarFilters from '@/components/SidebarFilters';
 import { PropertyFilters as PropertyFiltersType } from '@/types/property';
@@ -106,15 +106,17 @@ async function PropertyGrid({
 }
 
 async function SidebarWithData({ currentSlug }: { currentSlug: string }) {
-  const [neighborhoods, condominiums] = await Promise.all([
+  const [neighborhoods, condominiums, zones] = await Promise.all([
     getNeighborhoods(),
     getCondominiums(),
+    getZones(),
   ]);
   return (
     <SidebarFilters
       transactionType="sale"
       neighborhoods={neighborhoods}
       condominiums={condominiums}
+      zones={zones}
       currentNeighborhoodSlug={currentSlug}
     />
   );
@@ -171,6 +173,7 @@ export default async function ComprarBairroPage({
   const comodidades = resolvedSearch.comodidades as string | undefined;
   const codigo = resolvedSearch.codigo as string | undefined;
   const condominium_id = resolvedSearch.condominio as string | undefined;
+  const zone = resolvedSearch.zona as string | undefined;
 
   const filters: PropertyFiltersType = {
     transaction_type: 'sale',
@@ -187,6 +190,7 @@ export default async function ComprarBairroPage({
     comodidades,
     codigo,
     condominium_id,
+    zone,
   };
 
   if (!bairroInfo) {
