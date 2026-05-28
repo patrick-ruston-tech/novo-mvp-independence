@@ -123,6 +123,19 @@ export default function PropertyCard({ property, priceContext }: { property: Pro
           <p className="text-xs text-gray-400 mt-0.5 truncate">
             {property.neighborhood}, {property.city}
           </p>
+          {/* Nome do condomínio — cliente pediu pra aparecer já na listagem.
+              JOIN em CARD_FIELDS; supabase retorna objeto OU array. Só
+              renderiza quando o imóvel tem condomínio vinculado. */}
+          {(() => {
+            const condo = (property as any).condominium;
+            const condoName = Array.isArray(condo) ? condo[0]?.name : condo?.name;
+            if (!condoName) return null;
+            return (
+              <p className="text-xs text-brand-red/80 mt-0.5 truncate font-medium">
+                {condoName}
+              </p>
+            );
+          })()}
         </div>
 
         {/* Footer */}

@@ -116,7 +116,14 @@ export type PropertyCard = Pick<
   | 'images'
   | 'featured'
   | 'title'
->;
+> & {
+  /**
+   * Condomínio vinculado (JOIN em CARD_FIELDS). supabase-js pode retornar
+   * objeto OU array dependendo de como infere a relação — o card cobre
+   * os dois. Opcional: imóvel pode não ter condomínio.
+   */
+  condominium?: { name: string } | { name: string }[] | null;
+};
 
 // ---- Neighborhood ----
 

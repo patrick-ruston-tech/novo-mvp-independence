@@ -26,7 +26,8 @@ const CARD_FIELDS = `
   neighborhood, city, address,
   living_area, lot_area,
   bedrooms, bathrooms, suites, garages,
-  images, featured, title
+  images, featured, title,
+  condominium:condominium_id (name)
 `;
 
 /**
