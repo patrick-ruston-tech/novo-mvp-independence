@@ -26,7 +26,21 @@ export type RouletteTag = (typeof ROULETTE_TAGS)[keyof typeof ROULETTE_TAGS];
 
 const VENDA_THRESHOLD = 500_000;
 
+// Override manual de roteamento por código de imóvel (stopgap pedido pelo
+// cliente). Imóveis listados aqui caem SEMPRE na roleta de lançamento,
+// independente de is_launch / property_type / preço, e independente da
+// fonte (site, formulário Meta, portais). NÃO afeta XML nem outras lógicas
+// — só o roteamento do lead. Refinar depois com regra de verdade.
+//   AP0106 = Parque Una
+const LAUNCH_OVERRIDE_CODES = new Set(['AP0106']);
+
+/** Normaliza código: caixa alta, sem sufixo _INDEP, sem espaços. */
+function normalizeCode(code?: string | null): string {
+  return (code || '').toUpperCase().replace(/_INDEP$/i, '').trim();
+}
+
 export interface RouletteCriteria {
+  external_id?: string | null;
   is_launch?: boolean | null;
   property_type?: string | null;
   transaction_type?: string | null;
@@ -37,6 +51,11 @@ export function getRouletteTag(
   p: RouletteCriteria | null | undefined
 ): RouletteTag | null {
   if (!p) return null;
+
+  // 0. Override manual por código — precedência máxima (acima de tudo).
+  if (p.external_id && LAUNCH_OVERRIDE_CODES.has(normalizeCode(p.external_id))) {
+    return ROULETTE_TAGS.LANCAMENTO;
+  }
 
   // 1. Lançamento tem precedência absoluta (corretores especialistas)
   if (p.is_launch === true || p.property_type === 'Lançamento') {
