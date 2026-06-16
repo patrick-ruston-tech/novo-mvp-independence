@@ -3,8 +3,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getPostBySlug, getRelatedPosts, getAllPostSlugs } from '@/lib/blog-queries';
-import { urlFor } from '@/lib/sanity';
-import PortableTextRenderer from '@/components/PortableTextRenderer';
+import LexicalRenderer from '@/components/LexicalRenderer';
 import { ArrowRight, Share2, Bookmark } from 'lucide-react';
 
 export const revalidate = 300;
@@ -21,15 +20,18 @@ export async function generateMetadata(
   const post = await getPostBySlug(resolvedParams.slug);
   if (!post) return { title: 'Post não encontrado' };
 
-  const imageUrl = post.coverImage ? urlFor(post.coverImage).width(1200).height(630).url() : '/hero/hero-1.jpg';
+  // Usa os campos de SEO do post quando preenchidos; senão cai no título/resumo.
+  const metaTitle = post.seoTitle || post.title;
+  const metaDescription = post.seoDescription || post.excerpt;
+  const imageUrl = post.coverImage ? post.coverImage.hero || post.coverImage.url : '/hero/hero-1.jpg';
 
   return {
-    title: post.title,
-    description: post.excerpt,
+    title: metaTitle,
+    description: metaDescription,
     alternates: { canonical: `https://independenceimoveis.com.br/blog/${resolvedParams.slug}` },
     openGraph: {
       title: post.title,
-      description: post.excerpt,
+      description: metaDescription,
       type: 'article',
       images: [{ url: imageUrl, width: 1200, height: 630 }],
       publishedTime: post.publishedAt,
@@ -37,7 +39,7 @@ export async function generateMetadata(
     twitter: {
       card: 'summary_large_image',
       title: post.title,
-      description: post.excerpt,
+      description: metaDescription,
       images: [imageUrl],
     },
   };
@@ -80,7 +82,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red font-bold text-sm overflow-hidden">
               {post.author?.image ? (
-                <Image src={urlFor(post.author.image).width(80).height(80).url()} alt={post.author.name} width={40} height={40} className="object-cover" />
+                <Image src={post.author.image.url} alt={post.author.name} width={40} height={40} className="object-cover" />
               ) : (
                 post.author?.name?.charAt(0) || 'E'
               )}
@@ -106,7 +108,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 my-8">
           <div className="aspect-[21/9] relative rounded-2xl overflow-hidden">
             <Image
-              src={urlFor(post.coverImage).width(1920).height(800).url()}
+              src={post.coverImage.hero || post.coverImage.url}
               alt={post.title}
               fill
               className="object-cover"
@@ -119,7 +121,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
       {/* Content */}
       <article className="max-w-3xl mx-auto px-4 sm:px-6 pb-12">
-        <PortableTextRenderer content={post.body || []} />
+        <LexicalRenderer content={post.body} />
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
@@ -173,11 +175,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {relatedPosts.map((related) => (
-              <Link key={related._id} href={`/blog/${related.slug}`} className="group block">
+              <Link key={related.id} href={`/blog/${related.slug}`} className="group block">
                 <div className="aspect-[4/3] relative overflow-hidden rounded-2xl bg-gray-100 mb-4">
                   {related.coverImage && (
                     <Image
-                      src={urlFor(related.coverImage).width(600).height(450).url()}
+                      src={related.coverImage.card || related.coverImage.url}
                       alt={related.title}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
