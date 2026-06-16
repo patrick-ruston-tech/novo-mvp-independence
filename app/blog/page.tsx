@@ -2,7 +2,6 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getAllPosts, getFeaturedPost, getAllCategories, getPostsByCategory } from '@/lib/blog-queries';
-import { urlFor } from '@/lib/sanity';
 import BlogCategoryFilter from '@/components/BlogCategoryFilter';
 import { ArrowRight } from 'lucide-react';
 
@@ -41,7 +40,7 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
             <div className="relative overflow-hidden rounded-3xl min-h-[400px] md:min-h-[480px] flex items-end">
               {featured.coverImage && (
                 <Image
-                  src={urlFor(featured.coverImage).width(1920).height(800).url()}
+                  src={featured.coverImage.hero || featured.coverImage.url}
                   alt={featured.title}
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -86,12 +85,12 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
           {posts.map((post) => (
-            <Link key={post._id} href={`/blog/${post.slug}`} className="group block">
+            <Link key={post.id} href={`/blog/${post.slug}`} className="group block">
               <article>
                 <div className="aspect-[4/3] relative overflow-hidden rounded-2xl bg-gray-100 mb-4">
                   {post.coverImage && (
                     <Image
-                      src={urlFor(post.coverImage).width(600).height(450).url()}
+                      src={post.coverImage.card || post.coverImage.url}
                       alt={post.title}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
