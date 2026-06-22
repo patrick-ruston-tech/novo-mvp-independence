@@ -180,7 +180,7 @@ export default function SidebarFilters({ transactionType, neighborhoods = [], co
         >
           <option value="">Todos os bairros</option>
           {neighborhoods
-            .filter(b => !selectedCity || b.city === selectedCity)
+            .filter(b => b.property_count > 0 && (!selectedCity || b.city === selectedCity))
             .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
             .map(b => (
               <option key={b.slug} value={b.slug}>
