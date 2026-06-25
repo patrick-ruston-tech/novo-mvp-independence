@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { getPropertyBySlug, getSimilarProperties, getNeighborhoodBySlug, getFeaturedLaunches } from '@/lib/queries';
@@ -41,7 +41,7 @@ export async function generateMetadata(
   return {
     title: `${title} | Independence`,
     description,
-    alternates: { canonical: `https://independenceimoveis.com.br/imoveis/${resolvedParams.slug}` },
+    alternates: { canonical: `https://independenceimoveis.com.br/imoveis/${property.slug || resolvedParams.slug}` },
     openGraph: {
       title,
       description,
@@ -63,6 +63,13 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   if (!property) {
     notFound();
+  }
+
+  // Se o imóvel foi resolvido por um slug que não é o canônico (URL antiga,
+  // ou de quando o slug carregava preço/transação), redireciona 301 pro slug
+  // atual — preserva SEO e nunca deixa a URL defasada visível.
+  if (property.slug && property.slug !== resolvedParams.slug) {
+    permanentRedirect(`/imoveis/${property.slug}`);
   }
 
   const [similarProperties, launches] = await Promise.all([

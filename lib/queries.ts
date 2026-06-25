@@ -207,29 +207,56 @@ export async function getProperties(
 }
 
 /**
+ * Extrai o código (external_id) do final de um slug de imóvel.
+ * Todo slug termina no código: "...-jardim-satelite-...-ap5062" ou
+ * "...-ap5062-indep" (legado). Reconstrói o external_id (uppercase, '-'→'_').
+ * Retorna null se não encontrar um padrão de código no fim.
+ */
+export function extractCodeFromSlug(slug: string): string | null {
+  const m = slug.match(/([a-z]{2,4}\d{3,}(?:-indep)?)$/i);
+  if (!m) return null;
+  return m[1].toUpperCase().replace(/-/g, '_');
+}
+
+const PROPERTY_SELECT = '*, condominium:condominium_id (id, name)';
+
+/**
  * Busca imóvel completo pelo slug.
  * Usado na página /imoveis/[slug].
+ *
+ * Resolve em duas etapas:
+ *   1) match exato pelo slug (caso normal);
+ *   2) fallback pelo CÓDIGO embutido no fim do slug (URLs antigas ou de quando
+ *      o slug ainda carregava preço/transação). A página compara
+ *      property.slug com o slug pedido e dá 301 pro canônico quando difere —
+ *      assim nenhuma URL antiga quebra (mesma estratégia do Zap/VivaReal).
  */
 export const getPropertyBySlug = cache(async function getPropertyBySlug(
   slug: string
 ): Promise<Property | null> {
   const supabase = createServerClient();
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('properties')
-    // JOIN com condominium pra exibir o nome do condomínio no anúncio
-    // (a equipe pediu). condominium_id é FK; o nome vem da tabela condominiums.
-    .select('*, condominium:condominium_id (id, name)')
+    .select(PROPERTY_SELECT)
     .eq('slug', slug)
     .eq('is_published', true).in('status', PUBLIC_STATUSES)
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    console.error('getPropertyBySlug error:', error);
-    return null;
-  }
+  if (data) return data as Property;
 
-  return data as Property;
+  // Fallback: resolve pelo código do final do slug (auto-cura URLs antigas)
+  const code = extractCodeFromSlug(slug);
+  if (!code) return null;
+
+  const { data: byCode } = await supabase
+    .from('properties')
+    .select(PROPERTY_SELECT)
+    .eq('external_id', code)
+    .eq('is_published', true).in('status', PUBLIC_STATUSES)
+    .maybeSingle();
+
+  return (byCode as Property) || null;
 });
 
 /**
