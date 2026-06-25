@@ -97,10 +97,44 @@ const ROOT_PATH_REDIRECTS: Record<string, string> = {
 };
 
 // ──────────────────────────────────────────────────────────────
+// Redirect canônico de slug de imóvel.
+// URLs antigas com PREÇO no slug (legado) → 301 pro slug atual (limpo).
+// O permanentRedirect de página NÃO é honrado por este host (LiteSpeed, que
+// também faz soft-404), então o 301 vai aqui no middleware, que funciona.
+// Só dispara lookup quando o slug contém "por-r-" (marcador de preço, exclusivo
+// de URLs antigas) — tráfego normal não faz nenhum fetch.
+// ──────────────────────────────────────────────────────────────
+async function canonicalSlugRedirect(pathname: string): Promise<string | null> {
+  const m = pathname.match(/^\/imoveis\/([^/]+)\/?$/);
+  if (!m) return null;
+  const slug = m[1];
+  if (!slug.includes('por-r-')) return null; // só slugs poluídos por preço
+  const codeMatch = slug.match(/([a-z]{2,4}\d{3,}(?:-indep)?)$/i);
+  if (!codeMatch) return null;
+  const code = codeMatch[1].toUpperCase().replace(/-/g, '_');
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!base || !key) return null;
+  try {
+    const res = await fetch(
+      `${base}/rest/v1/properties?external_id=eq.${encodeURIComponent(code)}&select=slug&limit=1`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    const canonical = rows?.[0]?.slug;
+    if (canonical && canonical !== slug) return `/imoveis/${canonical}`;
+  } catch {
+    // falha de rede: não redireciona (a página ainda resolve pelo código)
+  }
+  return null;
+}
+
+// ──────────────────────────────────────────────────────────────
 // MAIN MIDDLEWARE
 // ──────────────────────────────────────────────────────────────
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const pathname = url.pathname;
 
@@ -134,6 +168,14 @@ export function middleware(req: NextRequest) {
   if (tipo && Object.prototype.hasOwnProperty.call(LEGACY_TYPE_REDIRECTS, tipo)) {
     const target = url.clone();
     target.searchParams.set('tipo', LEGACY_TYPE_REDIRECTS[tipo]);
+    return NextResponse.redirect(target, 301);
+  }
+
+  // 5) Slug de imóvel com preço (legado) → 301 pro slug canônico atual.
+  const canonicalDest = await canonicalSlugRedirect(pathname);
+  if (canonicalDest) {
+    const target = url.clone();
+    target.pathname = canonicalDest;
     return NextResponse.redirect(target, 301);
   }
 
