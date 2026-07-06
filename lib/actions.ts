@@ -79,9 +79,15 @@ export async function submitLeadAction(formData: FormData) {
         .single();
 
       if (recentLead) {
+        // Grava também o opportunity id — sem ele o lead fica "órfão" no
+        // espelho de relatórios do painel (não vincula) e o guard
+        // anti-duplicata do painel não enxerga esta opportunity.
         await supabase
           .from('leads')
-          .update({ ghl_contact_id: ghlResult.contactId })
+          .update({
+            ghl_contact_id: ghlResult.contactId,
+            ghl_opportunity_id: ghlResult.opportunityId,
+          })
           .eq('id', recentLead.id);
       }
     }

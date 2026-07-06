@@ -133,6 +133,53 @@ export async function createOpportunity(data: {
 }
 
 /**
+ * Busca uma opportunity ABERTA do contato cujo nome termina com o código
+ * do imóvel ("Fulana - AP0084_INDEP" — convenção de todos os fluxos).
+ *
+ * Guard anti-duplicata pré-criação: o GHL parou de bloquear opportunities
+ * duplicadas (config da location, ~mai/2026) e o mesmo interessado passou a
+ * ganhar uma opportunity nova a cada formulário enviado. Interesse em
+ * imóvel DIFERENTE não casa aqui de propósito — aí a nova é legítima.
+ * (Mesma lógica existe no painel, lib/ghl.ts.)
+ */
+export async function findOpenOpportunityByContactAndCode(
+  contactId: string,
+  propertyCode: string
+): Promise<{ id: string } | null> {
+  try {
+    const params = new URLSearchParams({
+      location_id: GHL_LOCATION_ID,
+      contact_id: contactId,
+      status: 'open',
+      limit: '20',
+    });
+    const response = await fetch(
+      `${GHL_BASE_URL}/opportunities/search?${params.toString()}`,
+      { method: 'GET', headers: getHeaders() }
+    );
+    if (!response.ok) {
+      console.error('GHL findOpenOpportunityByContactAndCode error:', response.status, await response.text());
+      return null;
+    }
+    const result = await response.json();
+    const opps: Array<{ id?: string; _id?: string; name?: string }> =
+      result?.opportunities || result?.data || [];
+    const target = propertyCode.trim().toUpperCase();
+    for (const o of opps) {
+      const m = (o.name ?? '').match(/-\s*([a-z]{2,6}\d{2,}(?:_indep)?)\s*$/i);
+      if (m && m[1].toUpperCase() === target) {
+        const id = o.id || o._id;
+        if (id) return { id };
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('GHL findOpenOpportunityByContactAndCode exception:', error);
+    return null;
+  }
+}
+
+/**
  * Busca Custom Object (Imóvel) pelo código
  */
 export async function findPropertyObject(codigo: string): Promise<{ id: string } | null> {
@@ -247,14 +294,23 @@ export async function processLeadFromSite(data: {
   if (!contact) return result;
   result.contactId = contact.id;
 
-  // 2. Criar opportunity no pipeline
+  // 2. Criar opportunity no pipeline — com guard anti-duplicata no fluxo
+  // de interesse em imóvel: se o contato JÁ tem opportunity aberta pra esse
+  // código, reaproveita em vez de criar outra. (Caso real: mesma pessoa
+  // preencheu o form do site depois de já ter lead da OLX e acumulou
+  // opportunities duplicadas no CRM.) 'lead-anunciar' fica de fora — vai
+  // pra outro pipeline e o nome não carrega código.
   const oppName = data.source === 'lead-anunciar'
     ? `${data.name} — Imóvel para anunciar`
     : data.propertyCode
       ? `${data.name} - ${data.propertyCode}`
       : `${data.name} - ${data.source}`;
 
-  const opportunity = await createOpportunity({
+  const existing = data.source === 'lead-imovel' && data.propertyCode
+    ? await findOpenOpportunityByContactAndCode(contact.id, data.propertyCode)
+    : null;
+
+  const opportunity = existing ?? await createOpportunity({
     contactId: contact.id,
     name: oppName,
     pipelineId: data.pipelineId,
