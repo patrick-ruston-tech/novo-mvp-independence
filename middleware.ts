@@ -163,12 +163,21 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(target, 301);
   }
 
-  // 4) Redirect de slugs legados em inglês via query (?tipo=apartment)
+  // 4) Redirect de slugs legados em inglês via query (?tipo=apartment).
+  //    ?tipo= aceita CSV (?tipo=casa,sobrado) — mapeia item a item.
   const tipo = url.searchParams.get('tipo');
-  if (tipo && Object.prototype.hasOwnProperty.call(LEGACY_TYPE_REDIRECTS, tipo)) {
-    const target = url.clone();
-    target.searchParams.set('tipo', LEGACY_TYPE_REDIRECTS[tipo]);
-    return NextResponse.redirect(target, 301);
+  if (tipo) {
+    const parts = tipo.split(',');
+    const mapped = parts.map((p) =>
+      Object.prototype.hasOwnProperty.call(LEGACY_TYPE_REDIRECTS, p)
+        ? LEGACY_TYPE_REDIRECTS[p]
+        : p
+    );
+    if (mapped.some((m, i) => m !== parts[i])) {
+      const target = url.clone();
+      target.searchParams.set('tipo', mapped.join(','));
+      return NextResponse.redirect(target, 301);
+    }
   }
 
   // 5) Slug de imóvel com preço (legado) → 301 pro slug canônico atual.

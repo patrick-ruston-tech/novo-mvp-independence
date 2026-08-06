@@ -1,12 +1,13 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { getProperties, getNeighborhoods, getCondominiums, getZones } from '@/lib/queries';
+import { getProperties, getNeighborhoods, getCondominiums, getZones, selectionToPropertyFilters } from '@/lib/queries';
+import { parseListingSelection, ListingSelection, RawSearchParams } from '@/lib/listing-params';
 import PropertyCard from '@/components/PropertyCard';
 import SidebarFilters from '@/components/SidebarFilters';
+import ActiveFilterChips from '@/components/ActiveFilterChips';
 import Pagination from '@/components/Pagination';
 import SortSelect from '@/components/SortSelect';
-import { PropertyFilters as PropertyFiltersType } from '@/types/property';
 
 export const metadata: Metadata = {
   title: 'Imóveis à Venda em São José dos Campos',
@@ -16,13 +17,8 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-async function PropertyGrid({
-  filters,
-  city,
-}: {
-  filters: PropertyFiltersType;
-  city?: string;
-}) {
+async function PropertyGrid({ sel, page }: { sel: ListingSelection; page: number }) {
+  const filters = await selectionToPropertyFilters(sel, 'sale', page);
   const { data: properties, total, total_pages } = await getProperties(filters);
 
   // Se buscou por código e encontrou exatamente 1 resultado, redireciona
@@ -38,14 +34,16 @@ async function PropertyGrid({
             Imóveis à venda
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            {total} resultados encontrados {city ? `em ${city}` : 'em São José dos Campos e região'}
+            {total} resultados encontrados {sel.cidade ? `em ${sel.cidade}` : 'em São José dos Campos e região'}
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm flex-shrink-0">
           <span className="text-gray-500 hidden sm:inline">Ordenar por:</span>
-          <SortSelect defaultValue={filters.sort_by} />
+          <SortSelect defaultValue={sel.ordem} />
         </div>
       </div>
+
+      <ActiveFilterChips sel={sel} base="/comprar" />
 
       {properties.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -62,12 +60,12 @@ async function PropertyGrid({
       ) : (
         <div className="text-center py-20 bg-gray-50 rounded-2xl border border-gray-100">
           <p className="text-gray-500">Nenhum imóvel encontrado com os filtros atuais.</p>
-          <p className="text-sm text-gray-400 mt-1">Tente ajustar os filtros para ver mais resultados.</p>
+          <p className="text-sm text-gray-400 mt-1">Remova um dos filtros acima para ver mais resultados.</p>
         </div>
       )}
 
       <Pagination
-        currentPage={filters.page!}
+        currentPage={page}
         totalPages={total_pages}
         basePath="/comprar"
       />
@@ -102,53 +100,20 @@ function GridSkeleton() {
   );
 }
 
+function safePage(value: string | string[] | undefined): number {
+  const num = Number(Array.isArray(value) ? value[0] : value);
+  if (!Number.isFinite(num) || num < 1 || num > 10000) return 1;
+  return Math.trunc(num);
+}
+
 export default async function ComprarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: Promise<RawSearchParams>;
 }) {
   const resolvedParams = await searchParams;
-
-  function safePositiveInt(value: any, max = 100_000_000): number | undefined {
-    const num = Number(value);
-    if (isNaN(num) || num < 0 || num > max) return undefined;
-    return num;
-  }
-
-  const VALID_SORT = ['newest', 'price_asc', 'price_desc', 'area_desc'];
-  const page = safePositiveInt(resolvedParams.pagina, 10000) || 1;
-  const sort_by = VALID_SORT.includes(resolvedParams.ordem as string)
-    ? (resolvedParams.ordem as PropertyFiltersType['sort_by'])
-    : 'newest';
-  const property_type = resolvedParams.tipo as PropertyFiltersType['property_type'];
-  const bedrooms_min = safePositiveInt(resolvedParams.quartos, 20);
-  const suites_min = safePositiveInt(resolvedParams.suites, 20);
-  const price_min = safePositiveInt(resolvedParams.preco_min);
-  const price_max = safePositiveInt(resolvedParams.preco_max);
-  const garages_min = safePositiveInt(resolvedParams.garagens, 20);
-  const city = resolvedParams.cidade as string | undefined;
-  const comodidades = resolvedParams.comodidades as string | undefined;
-  const codigo = resolvedParams.codigo as string | undefined;
-  const condominium_id = resolvedParams.condominio as string | undefined;
-  const zone = resolvedParams.zona as string | undefined;
-
-  const filters: PropertyFiltersType = {
-    transaction_type: 'sale',
-    page,
-    per_page: 12,
-    sort_by,
-    property_type,
-    bedrooms_min,
-    suites_min,
-    price_min,
-    price_max,
-    garages_min,
-    city,
-    comodidades,
-    codigo,
-    condominium_id,
-    zone,
-  };
+  const sel = parseListingSelection(resolvedParams);
+  const page = safePage(resolvedParams.pagina);
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
@@ -162,7 +127,7 @@ export default async function ComprarPage({
         {/* Main Content */}
         <div className="flex-1 min-w-0">
           <Suspense fallback={<GridSkeleton />}>
-            <PropertyGrid filters={filters} city={city} />
+            <PropertyGrid sel={sel} page={page} />
           </Suspense>
         </div>
       </div>

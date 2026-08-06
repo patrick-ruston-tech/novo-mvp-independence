@@ -182,9 +182,13 @@ export interface PropertySubmission {
 export interface PropertyFilters {
   transaction_type: TransactionType;
   neighborhood?: string;
+  /** NOMES de bairro (multi). Quando presente, tem precedência sobre `neighborhood`. */
+  neighborhoods?: string[];
   /** Nome da zona (properties.zone guarda o nome, não id). */
   zone?: string;
   property_type?: PropertyType;
+  /** Slugs de tipo (multi). Quando presente, tem precedência sobre `property_type`. */
+  property_types?: string[];
   bedrooms_min?: number;
   suites_min?: number;
   price_min?: number;

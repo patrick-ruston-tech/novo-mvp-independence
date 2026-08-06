@@ -14,6 +14,7 @@ import {
   propertyTypeDbValues,
   FEATURES_FOR_FILTER,
 } from '@/lib/property-vocabulary';
+import type { ListingSelection } from '@/lib/listing-params';
 
 // ============================================================
 // PROPERTY QUERIES
@@ -47,14 +48,24 @@ const PUBLIC_STATUSES = ['active', 'reserved', 'negotiating'] as const;
  * Lista imóveis com filtros e paginação.
  * Usado nas páginas /comprar e /alugar.
  */
-export async function getProperties(
-  filters: PropertyFilters
-): Promise<PaginatedResponse<PropertyCard>> {
-  const supabase = createServerClient();
+/**
+ * Aplica os filtros de listagem numa query de properties já iniciada
+ * (com select/count definidos pelo caller). Compartilhado entre
+ * getProperties (listagem) e getPropertiesCount (rota de contagem) para
+ * as duas nunca divergirem.
+ *
+ * Regra do CÓDIGO: código identifica UM imóvel — quando presente, todos
+ * os demais filtros são ignorados (antes só a transação era ignorada;
+ * cidade/tipo/preço residuais geravam 0-resultado fantasma, ex.:
+ * cidade=Jacareí + código de imóvel de SJC).
+ */
+function applyListingFilters(query: any, filters: PropertyFilters): any {
   const {
     transaction_type,
     neighborhood,
+    neighborhoods,
     property_type,
+    property_types,
     bedrooms_min,
     suites_min,
     price_min,
@@ -63,56 +74,65 @@ export async function getProperties(
     features,
     comodidades,
     city,
-    sort_by = 'newest',
-    page = 1,
-    per_page = 12,
   } = filters;
 
-  // Query base: imóveis publicados (toggle "Mostrar no site" ligado).
-  // Antes filtrávamos por status='active', mas isso excluía imóveis válidos
-  // como reservados/em negociação que o corretor optou por manter visíveis,
-  // e mantia visíveis imóveis com is_published=false (toggle desligado).
-  // is_published é a fonte de verdade do que aparece no site.
-  let query = supabase
-    .from('properties')
-    .select(CARD_FIELDS, { count: 'exact' })
-    .eq('is_published', true).in('status', PUBLIC_STATUSES);
+  if (filters.codigo) {
+    return query.ilike('external_id', `%${filters.codigo}%`);
+  }
 
-  // Filtro principal: tipo de transação
+  // Filtro principal: tipo de transação.
   // sale_rent aparece tanto em comprar quanto em alugar.
-  // Exceção: quando o usuário busca por CÓDIGO específico (ex: AP1234),
-  // ignoramos o filtro de transação porque o código já identifica o
-  // imóvel exato — sem isso, código de imóvel pra locação digitado na
-  // aba "Comprar" retornava vazio e parecia bug.
-  if (!filters.codigo) {
-    if (transaction_type === 'sale') {
-      query = query.in('transaction_type', ['sale', 'sale_rent']);
-    } else if (transaction_type === 'rent') {
-      query = query.in('transaction_type', ['rent', 'sale_rent']);
-    }
+  if (transaction_type === 'sale') {
+    query = query.in('transaction_type', ['sale', 'sale_rent']);
+  } else if (transaction_type === 'rent') {
+    query = query.in('transaction_type', ['rent', 'sale_rent']);
   }
 
-  // Filtros opcionais
-  if (neighborhood) {
-    query = query.eq('neighborhood', neighborhood);
+  // Bairro(s) — por NOME. `neighborhoods` (multi, vindo de ?bairros=) tem
+  // precedência sobre o `neighborhood` single legado.
+  const nbNames =
+    neighborhoods && neighborhoods.length > 0
+      ? neighborhoods
+      : neighborhood
+        ? [neighborhood]
+        : [];
+  if (nbNames.length === 1) {
+    query = query.eq('neighborhood', nbNames[0]);
+  } else if (nbNames.length > 1) {
+    query = query.in('neighborhood', nbNames);
   }
+
   // Zona — properties.zone guarda o NOME da zona (string).
   if (filters.zone) {
     query = query.eq('zone', filters.zone);
   }
-  if (property_type) {
-    // Resolve o slug (PT canônico ou legado EN) para o(s) valor(es) armazenado(s)
-    // no banco via property-vocabulary. Se o slug não for conhecido, faz match
-    // direto na string (permite passar PT bruto, ex: "Apartamento").
-    const dbValues = propertyTypeDbValues(property_type);
-    if (dbValues.length > 1) {
-      query = query.in('property_type', dbValues as string[]);
-    } else if (dbValues.length === 1) {
-      query = query.eq('property_type', dbValues[0]);
-    } else {
-      query = query.eq('property_type', String(property_type));
+
+  // Tipo(s) de imóvel. Cada slug (PT canônico ou legado EN) resolve para
+  // o(s) valor(es) armazenado(s) no banco via property-vocabulary; slug
+  // desconhecido faz match direto na string (permite PT bruto, ex.:
+  // "Apartamento"). Multi = união de todos os dbValues.
+  const typeSlugs =
+    property_types && property_types.length > 0
+      ? property_types
+      : property_type
+        ? [String(property_type)]
+        : [];
+  if (typeSlugs.length > 0) {
+    const dbValues = new Set<string>();
+    for (const slug of typeSlugs) {
+      const resolved = propertyTypeDbValues(slug);
+      if (resolved.length > 0) {
+        for (const v of resolved) dbValues.add(v);
+      } else {
+        dbValues.add(String(slug));
+      }
     }
+    const values = Array.from(dbValues);
+    query = values.length === 1
+      ? query.eq('property_type', values[0])
+      : query.in('property_type', values);
   }
+
   if (bedrooms_min) {
     query = query.gte('bedrooms', bedrooms_min);
   }
@@ -125,16 +145,12 @@ export async function getProperties(
   if (city) {
     query = query.eq('city', city);
   }
-  if (filters.codigo) {
-    query = query.ilike('external_id', `%${filters.codigo}%`);
-  }
   if (filters.condominium_id) {
     query = query.eq('condominium_id', filters.condominium_id);
   }
 
   // Filtro de preço (usa price_sale ou price_rent conforme o tipo)
-  const priceCol =
-    transaction_type === 'rent' ? 'price_rent' : 'price_sale';
+  const priceCol = transaction_type === 'rent' ? 'price_rent' : 'price_sale';
   if (price_min) {
     query = query.gte(priceCol, price_min);
   }
@@ -165,6 +181,34 @@ export async function getProperties(
   if (allowed.length > 0) {
     query = query.contains('features', allowed);
   }
+
+  return query;
+}
+
+export async function getProperties(
+  filters: PropertyFilters
+): Promise<PaginatedResponse<PropertyCard>> {
+  const supabase = createServerClient();
+  const {
+    transaction_type,
+    sort_by = 'newest',
+    page = 1,
+    per_page = 12,
+  } = filters;
+
+  // Query base: imóveis publicados (toggle "Mostrar no site" ligado).
+  // Antes filtrávamos por status='active', mas isso excluía imóveis válidos
+  // como reservados/em negociação que o corretor optou por manter visíveis,
+  // e mantia visíveis imóveis com is_published=false (toggle desligado).
+  // is_published é a fonte de verdade do que aparece no site.
+  let query = supabase
+    .from('properties')
+    .select(CARD_FIELDS, { count: 'exact' })
+    .eq('is_published', true).in('status', PUBLIC_STATUSES);
+
+  query = applyListingFilters(query, filters);
+
+  const priceCol = transaction_type === 'rent' ? 'price_rent' : 'price_sale';
 
   // Ordenação
   switch (sort_by) {
@@ -203,6 +247,69 @@ export async function getProperties(
     page,
     per_page,
     total_pages: Math.ceil(total / per_page),
+  };
+}
+
+/**
+ * Só a contagem de uma listagem (HEAD count, sem linhas). Usada pela rota
+ * /api/imoveis/contagem que alimenta o botão "Ver N imóveis" da sidebar.
+ * Retorna null em erro — o botão degrada pra "Aplicar filtros".
+ */
+export async function getPropertiesCount(
+  filters: PropertyFilters
+): Promise<number | null> {
+  const supabase = createServerClient();
+  let query = supabase
+    .from('properties')
+    .select('id', { count: 'exact', head: true })
+    .eq('is_published', true).in('status', PUBLIC_STATUSES);
+  query = applyListingFilters(query, filters);
+
+  const { count, error } = await query;
+  if (error) {
+    console.error('getPropertiesCount error:', error);
+    return null;
+  }
+  return count ?? 0;
+}
+
+/**
+ * Converte a seleção canônica da URL (lib/listing-params) em PropertyFilters,
+ * resolvendo slugs de bairro → nomes (properties.neighborhood guarda o nome).
+ * Slug que não existe na tabela neighborhoods vira ele mesmo como "nome" —
+ * resulta em 0 matches, igual ao comportamento antigo da rota /comprar/[bairro].
+ */
+export async function selectionToPropertyFilters(
+  sel: ListingSelection,
+  transaction: 'sale' | 'rent',
+  page = 1,
+  per_page = 12
+): Promise<PropertyFilters> {
+  let neighborhoodNames: string[] | undefined;
+  if (sel.bairros.length > 0 && !sel.codigo) {
+    const all = await getNeighborhoods();
+    neighborhoodNames = sel.bairros.map(
+      (slug) => all.find((n) => n.slug === slug)?.name ?? slug
+    );
+  }
+
+  return {
+    transaction_type: transaction,
+    page,
+    per_page,
+    sort_by: sel.ordem,
+    property_types: sel.tipos.length > 0 ? sel.tipos : undefined,
+    neighborhoods: neighborhoodNames,
+    bedrooms_min: sel.quartos ?? undefined,
+    suites_min: sel.suites ?? undefined,
+    garages_min: sel.garagens ?? undefined,
+    price_min: sel.precoMin ?? undefined,
+    price_max: sel.precoMax ?? undefined,
+    city: sel.cidade || undefined,
+    comodidades: sel.comodidades.length > 0 ? sel.comodidades.join(',') : undefined,
+    codigo: sel.codigo || undefined,
+    condominium_id: sel.condominio || undefined,
+    zone: sel.zona || undefined,
   };
 }
 
