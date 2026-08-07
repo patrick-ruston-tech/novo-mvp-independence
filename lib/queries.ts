@@ -367,27 +367,70 @@ export const getPropertyBySlug = cache(async function getPropertyBySlug(
 });
 
 /**
- * Busca imóveis em destaque para a home.
- * Prioriza SUPER_PREMIUM > PREMIUM > STANDARD.
+ * Monta o vetor de uma seção curada da home (Destaque / Descobrir).
+ *
+ * Curadoria (painel /imoveis/destaques): imóveis com `posCol` preenchido
+ * ocupam seu slot na ordem exata. Slots vazios — ou cujo imóvel saiu do ar
+ * (vendido/despublicado, filtrado pela query) — são preenchidos NA ORDEM DO
+ * SLOT pelo pool (flag ligada sem posição, mais recentes primeiro). No fim
+ * compacta: nunca renderiza buraco. Dia 1 sem curadoria = comportamento
+ * antigo (só pool), então não precisa de seed.
  */
-export const getFeaturedProperties = unstable_cache(
-  async (limit = 8) => {
-    const supabase = createServerClient();
-    const { data, error } = await supabase
+async function getCuratedSlots(
+  flagCol: 'featured' | 'is_discover',
+  posCol: 'featured_position' | 'discover_position',
+  limit: number
+): Promise<PropertyCard[]> {
+  const supabase = createServerClient();
+  const [pinnedRes, poolRes] = await Promise.all([
+    supabase
+      .from('properties')
+      .select(`${CARD_FIELDS}, ${posCol}`)
+      .eq('is_published', true).in('status', PUBLIC_STATUSES)
+      .not(posCol, 'is', null)
+      .order(posCol, { ascending: true }),
+    supabase
       .from('properties')
       .select(CARD_FIELDS)
       .eq('is_published', true).in('status', PUBLIC_STATUSES)
-      .eq('featured', true)
-      .limit(limit);
+      .eq(flagCol, true)
+      .is(posCol, null)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+  ]);
 
-    if (error) {
-      console.error('getFeaturedProperties error:', error);
-      return [];
-    }
-    return data ?? [];
-  },
-  ['featured-properties'],
+  if (pinnedRes.error) console.error(`getCuratedSlots(${posCol}) pinned error:`, pinnedRes.error);
+  if (poolRes.error) console.error(`getCuratedSlots(${posCol}) pool error:`, poolRes.error);
+
+  const slots: (PropertyCard | null)[] = Array(limit).fill(null);
+  for (const p of (pinnedRes.data as any[]) ?? []) {
+    const idx = Number(p[posCol]) - 1;
+    if (idx >= 0 && idx < limit && !slots[idx]) slots[idx] = p as PropertyCard;
+  }
+  const queue = [...(((poolRes.data as any[]) ?? []) as PropertyCard[])];
+  for (let i = 0; i < limit && queue.length > 0; i++) {
+    if (!slots[i]) slots[i] = queue.shift()!;
+  }
+  return slots.filter((p): p is PropertyCard => p !== null);
+}
+
+/**
+ * Imóveis da seção "Imóveis em Destaque" da home (8 slots curados).
+ */
+export const getFeaturedProperties = unstable_cache(
+  async (limit = 8) => getCuratedSlots('featured', 'featured_position', limit),
+  ['featured-properties-slots'],
   { revalidate: 300 } // cache por 5 minutos
+);
+
+/**
+ * Imóveis da faixa "Descobrir/Oportunidades" da home (4 slots curados).
+ * A página /descobrir continua usando getDiscoverProperties (pool inteiro).
+ */
+export const getDiscoverHome = unstable_cache(
+  async (limit = 4) => getCuratedSlots('is_discover', 'discover_position', limit),
+  ['discover-home-slots'],
+  { revalidate: 300 }
 );
 
 /**

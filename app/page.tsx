@@ -7,7 +7,7 @@ import PropertyCard from '@/components/PropertyCard';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { getNeighborhoods, getCondominiums, getFeaturedProperties, getHomeStats, getFeaturedLaunches, getDiscoverProperties, getTestimonials } from '@/lib/queries';
+import { getNeighborhoods, getCondominiums, getFeaturedProperties, getHomeStats, getFeaturedLaunches, getDiscoverHome, getTestimonials } from '@/lib/queries';
 import TestimonialCarousel from '@/components/TestimonialCarousel';
 
 export const metadata: Metadata = {
@@ -107,8 +107,9 @@ async function LaunchesSection() {
 }
 
 async function DiscoverSection() {
-  const discover = await getDiscoverProperties();
-  const discoverHome = discover.slice(0, 4);
+  // 4 slots curados no painel (posições fixas + preenchimento pelo pool).
+  // O pool completo continua na página /descobrir.
+  const discoverHome = await getDiscoverHome(4);
   if (discoverHome.length === 0) return null;
 
   return (
