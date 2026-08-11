@@ -35,16 +35,30 @@ export async function submitLeadAction(formData: FormData) {
   // 2. Busca dados do imóvel pra extrair external_id + critérios de roleta.
   let propertyCode: string | undefined;
   let rouletteTag: string | null = null;
+  let monetaryValue: number | undefined;
+  let linksNote: string | undefined;
   if (lead.property_id) {
     try {
       const supabase = createServerClient();
       const { data } = await supabase
         .from('properties')
-        .select('external_id, transaction_type, price_sale, property_type, is_launch')
+        .select('external_id, slug, transaction_type, price_sale, price_rent, property_type, is_launch')
         .eq('id', lead.property_id)
         .single();
       propertyCode = data?.external_id;
       rouletteTag = getRouletteTag(data);
+      // G1: valor do imóvel → campo "valor" do card. Locação pura usa o
+      // aluguel; venda e venda-e-locação usam o preço de venda.
+      const preco = data?.transaction_type === 'rent' ? data?.price_rent : data?.price_sale;
+      if (Number(preco) > 0) monetaryValue = Number(preco);
+      // G2: links clicáveis na timeline — corretor abre o imóvel em 1 clique
+      if (data?.slug) {
+        const adminBase = process.env.NEXT_PUBLIC_ADMIN_URL || 'https://painel-admin-independence.vercel.app';
+        linksNote =
+          `Imóvel do lead (${data.external_id}):\n` +
+          `No site: https://www.independenceimoveis.com.br/imoveis/${data.slug}\n` +
+          `No painel: ${adminBase}/imoveis/${lead.property_id}`;
+      }
     } catch (e) {
       // Não bloqueia o fluxo se falhar
     }
@@ -61,6 +75,8 @@ export async function submitLeadAction(formData: FormData) {
       pageUrl: lead.page_url || '',
       pipelineId: 'tFthy3lQsGWeMn8auD90',
       stageId: '4e179192-bb19-4ab9-863b-ce93b6659d77',
+      monetaryValue,
+      noteBody: linksNote,
       // Tag de roleta dispara workflow específico no GHL pra distribuir
       // o lead pra equipe correta (lançamento / locação / venda <500k / venda >=500k).
       extraTags: rouletteTag ? [rouletteTag] : undefined,
@@ -160,13 +176,19 @@ export async function submitPropertyAction(formData: FormData) {
       submissionUrl,
       pipelineId: 'Vsw7I2qUOYB2B98CpEmq',
       stageId: '05d65a3d-4215-400b-b2f3-339985b408a6',
+      monetaryValue: Number(submission.price_estimate) > 0 ? Number(submission.price_estimate) : undefined,
     });
 
     if (ghlResult.contactId && submissionId) {
       const supabase = createServerClient();
+      // ghl_opportunity_id habilita a ROLETA DE CAPTAÇÃO do painel: o tick
+      // acha submissões com opportunity sem distribuição e roda o rodízio.
       await supabase
         .from('property_submissions')
-        .update({ ghl_contact_id: ghlResult.contactId })
+        .update({
+          ghl_contact_id: ghlResult.contactId,
+          ghl_opportunity_id: ghlResult.opportunityId,
+        })
         .eq('id', submissionId);
     }
   } catch (e) {

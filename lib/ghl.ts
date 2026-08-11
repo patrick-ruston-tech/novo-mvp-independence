@@ -3,8 +3,11 @@ const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID || '';
 const GHL_BASE_URL = 'https://services.leadconnectorhq.com';
 
 // Pipeline IDs
-const PIPELINE_PRE_VENDA = 'd232xPcFo2xoOVEH79C1';
-const STAGE_ENTRADA = 'c359cbe6-35c6-41ff-afef-04c967b6705a';
+// FIX (10/ago/2026): o pipeline antigo 'd232xPcFo2xoOVEH79C1' foi APAGADO no
+// GHL — opportunities do /anunciar falhavam com "Pipeline not found". O funil
+// vivo é "Recebidos para Anuncio" (mesmos IDs usados pelo painel).
+const PIPELINE_PRE_VENDA = 'Vsw7I2qUOYB2B98CpEmq';
+const STAGE_ENTRADA = '05d65a3d-4215-400b-b2f3-339985b408a6';
 
 // Custom Objects
 const CUSTOM_OBJECT_KEY = 'custom_objects.imoveis';
@@ -103,19 +106,25 @@ export async function createOpportunity(data: {
   name: string;
   pipelineId?: string;
   stageId?: string;
+  /** Preço do imóvel (G1): venda→price_sale, locação→price_rent. */
+  monetaryValue?: number;
 }): Promise<{ id: string } | null> {
   try {
+    const body: Record<string, any> = {
+      locationId: GHL_LOCATION_ID,
+      pipelineId: data.pipelineId || PIPELINE_PRE_VENDA,
+      pipelineStageId: data.stageId || STAGE_ENTRADA,
+      contactId: data.contactId,
+      name: data.name,
+      status: 'open',
+    };
+    if (data.monetaryValue && data.monetaryValue > 0) {
+      body.monetaryValue = data.monetaryValue;
+    }
     const response = await fetch(`${GHL_BASE_URL}/opportunities/`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({
-        locationId: GHL_LOCATION_ID,
-        pipelineId: data.pipelineId || PIPELINE_PRE_VENDA,
-        pipelineStageId: data.stageId || STAGE_ENTRADA,
-        contactId: data.contactId,
-        name: data.name,
-        status: 'open',
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -258,6 +267,10 @@ export async function processLeadFromSite(data: {
   submissionUrl?: string;
   pipelineId?: string;
   stageId?: string;
+  /** Preço do imóvel (G1) — vira o campo "valor" do card no CRM. */
+  monetaryValue?: number;
+  /** Nota extra no timeline (G2: links do imóvel no site/painel — URLs em nota são clicáveis). */
+  noteBody?: string;
   /** Tags adicionais (ex: tag de roleta calculada pelo caller). */
   extraTags?: string[];
 }): Promise<{ contactId: string | null; opportunityId: string | null; associated: boolean }> {
@@ -315,6 +328,7 @@ export async function processLeadFromSite(data: {
     name: oppName,
     pipelineId: data.pipelineId,
     stageId: data.stageId,
+    monetaryValue: data.monetaryValue,
   });
 
   if (opportunity) {
@@ -333,6 +347,11 @@ export async function processLeadFromSite(data: {
   if (data.source === 'lead-anunciar' && data.submissionUrl) {
     const noteBody = `Imóvel enviado para anúncio via site.\n\nFicha no painel admin:\n${data.submissionUrl}`;
     await addContactNote(contact.id, noteBody);
+  }
+
+  // 5. Nota extra do caller (links do imóvel etc.)
+  if (data.noteBody) {
+    await addContactNote(contact.id, data.noteBody);
   }
 
   return result;
