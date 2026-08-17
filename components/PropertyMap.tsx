@@ -1,19 +1,8 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, TileLayer, Circle, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-
-// Fix default marker icon issue with Next.js
-const icon = L.icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+import type { AddressPrecision } from '@/lib/property-address';
 
 interface PropertyMapProps {
   // Aceita number OU string porque o supabase-js retorna colunas `numeric`
@@ -23,9 +12,31 @@ interface PropertyMapProps {
   latitude: number | string | null | undefined;
   longitude: number | string | null | undefined;
   address?: string;
+  /**
+   * Precisão permitida (lib/property-address): 'street' desenha um raio de
+   * quadra; 'neighborhood' (imóvel com "ocultar endereço") abre pro bairro.
+   * Sempre ÁREA, nunca pin — pin na coordenada da casa entrega o endereço
+   * exato mesmo com o texto escondido.
+   */
+  precision?: AddressPrecision;
 }
 
-export default function PropertyMap({ latitude, longitude, address }: PropertyMapProps) {
+const RAIO_METROS: Record<AddressPrecision, number> = {
+  street: 150,
+  neighborhood: 600,
+};
+
+const ZOOM: Record<AddressPrecision, number> = {
+  street: 16,
+  neighborhood: 14,
+};
+
+export default function PropertyMap({
+  latitude,
+  longitude,
+  address,
+  precision = 'street',
+}: PropertyMapProps) {
   const lat = typeof latitude === 'string' ? parseFloat(latitude) : (latitude ?? NaN);
   const lng = typeof longitude === 'string' ? parseFloat(longitude) : (longitude ?? NaN);
 
@@ -46,21 +57,32 @@ export default function PropertyMap({ latitude, longitude, address }: PropertyMa
   }
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-gray-100 h-72">
-      <MapContainer
-        center={[lat, lng]}
-        zoom={15}
-        scrollWheelZoom={false}
-        style={{ height: '100%', width: '100%' }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Marker position={[lat, lng]} icon={icon}>
-          {address && <Popup>{address}</Popup>}
-        </Marker>
-      </MapContainer>
+    <div>
+      <div className="rounded-2xl overflow-hidden border border-gray-100 h-72">
+        <MapContainer
+          center={[lat, lng]}
+          zoom={ZOOM[precision]}
+          scrollWheelZoom={false}
+          style={{ height: '100%', width: '100%' }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <Circle
+            center={[lat, lng]}
+            radius={RAIO_METROS[precision]}
+            pathOptions={{ color: '#EC5B13', weight: 2, fillColor: '#EC5B13', fillOpacity: 0.15 }}
+          >
+            {address && <Popup>{address}</Popup>}
+          </Circle>
+        </MapContainer>
+      </div>
+      <p className="text-xs text-gray-400 mt-2">
+        {precision === 'neighborhood'
+          ? 'Localização aproximada — mostramos apenas o bairro. Fale com um corretor para o endereço.'
+          : 'Localização aproximada — mostramos a região da rua, sem o número.'}
+      </p>
     </div>
   );
 }

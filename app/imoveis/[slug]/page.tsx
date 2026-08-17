@@ -12,6 +12,7 @@ import AmenitiesList from '@/components/AmenitiesList';
 import PropertyMapWrapper from '@/components/PropertyMapWrapper';
 import LaunchMiniBanner from '@/components/LaunchMiniBanner';
 import { getWatermarkedImages, toCdn } from '@/lib/image-utils';
+import { publicAddressLabel, addressPrecision, schemaStreetAddress } from '@/lib/property-address';
 
 export const revalidate = 3600;
 
@@ -147,7 +148,8 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             } : undefined,
             address: {
               '@type': 'PostalAddress',
-              streetAddress: property.address || '',
+              // Só publica logradouro quando o imóvel permite (sem número).
+              streetAddress: schemaStreetAddress(property as any),
               addressLocality: property.city,
               addressRegion: property.state || 'SP',
               addressCountry: 'BR',
@@ -441,17 +443,15 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
               Localização
             </h2>
-            {/* address montado igual ao header — antes era property.address
-                (deprecado, sempre null), o popup do mapa ficava com ", Bairro, Cidade". */}
+            {/* Endereço e precisão do mapa respeitam `hide_address`
+                (lib/property-address): número NUNCA aparece; imóvel com
+                "ocultar endereço" mostra só o bairro, e o mapa desenha área
+                aproximada em vez de pin exato. */}
             <PropertyMapWrapper
               latitude={property.latitude ?? 0}
               longitude={property.longitude ?? 0}
-              address={[
-                (property as any).street || property.address,
-                (property as any).street_number,
-                property.neighborhood,
-                property.city,
-              ].filter(Boolean).join(', ')}
+              address={publicAddressLabel(property as any)}
+              precision={addressPrecision(property as any)}
             />
             {bairroInfo?.description && (
               <p className="text-sm text-gray-500 mt-4 leading-relaxed">

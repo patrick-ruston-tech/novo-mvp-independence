@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import type { AddressPrecision } from '@/lib/property-address';
 
 const PropertyMap = dynamic(() => import('./PropertyMap'), {
   ssr: false,
@@ -16,8 +17,10 @@ interface PropertyMapWrapperProps {
   latitude: number | string | null | undefined;
   longitude: number | string | null | undefined;
   address?: string;
+  /** Precisão pública do endereço (lib/property-address). */
+  precision?: AddressPrecision;
 }
 
-export default function PropertyMapWrapper({ latitude, longitude, address }: PropertyMapWrapperProps) {
-  return <PropertyMap latitude={latitude} longitude={longitude} address={address} />;
+export default function PropertyMapWrapper({ latitude, longitude, address, precision }: PropertyMapWrapperProps) {
+  return <PropertyMap latitude={latitude} longitude={longitude} address={address} precision={precision} />;
 }
