@@ -13,6 +13,7 @@ import PropertyMapWrapper from '@/components/PropertyMapWrapper';
 import LaunchMiniBanner from '@/components/LaunchMiniBanner';
 import { getWatermarkedImages, toCdn } from '@/lib/image-utils';
 import { publicAddressLabel, addressPrecision, schemaStreetAddress } from '@/lib/property-address';
+import { propertyVideoEmbed } from '@/lib/property-video';
 
 export const revalidate = 3600;
 
@@ -403,6 +404,39 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <div className="h-px bg-gray-100 my-8"></div>
             </>
           )}
+
+          {/* Vídeo do imóvel. O campo do banco guarda TEXTO colado pela equipe
+              (às vezes com duas URLs na mesma linha) e nunca o formato /embed/
+              que o iframe exige, então o id é extraído — ver lib/property-video.
+              Vídeo institucional repetido em dezenas de imóveis não entra aqui:
+              não é vídeo daquele imóvel. */}
+          {(() => {
+            const embed = propertyVideoEmbed(property.video_url);
+            if (!embed) return null;
+            return (
+              <>
+                <div>
+                  <h2 className="text-lg font-heading font-bold text-black mb-4 flex items-center gap-2">
+                    <span className="w-1 h-5 bg-[#EC5B13] rounded-full"></span>
+                    Vídeo do imóvel
+                  </h2>
+                  <div className="aspect-video rounded-2xl overflow-hidden bg-black">
+                    <iframe
+                      src={embed}
+                      title={`Vídeo do imóvel ${property.external_id ?? ''}`.trim()}
+                      className="w-full h-full"
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      sandbox="allow-scripts allow-same-origin allow-presentation"
+                    />
+                  </div>
+                </div>
+
+                <div className="h-px bg-gray-100 my-8"></div>
+              </>
+            );
+          })()}
 
           {/* Comodidades — consolida as 8 colunas amenities_* num único array.
               Antes o site tentava ler `property.features` (campo legado que
