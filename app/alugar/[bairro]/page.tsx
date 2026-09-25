@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import { getProperties, getNeighborhoodBySlug, getNeighborhoods, getCondominiums, getZones, selectionToPropertyFilters } from '@/lib/queries';
+import { getProperties, getNeighborhoodBySlug, getNeighborhoods, getCondominiums, getZones, getCities, selectionToPropertyFilters } from '@/lib/queries';
 import { parseListingSelection, ListingSelection, RawSearchParams } from '@/lib/listing-params';
 import PropertyCard from '@/components/PropertyCard';
 import SidebarFilters from '@/components/SidebarFilters';
@@ -110,7 +110,8 @@ async function PropertyGrid({
 }
 
 async function SidebarWithData({ currentSlug }: { currentSlug: string }) {
-  const [neighborhoods, condominiums, zones] = await Promise.all([
+  const [cities, neighborhoods, condominiums, zones] = await Promise.all([
+    getCities(),
     getNeighborhoods(),
     getCondominiums(),
     getZones(),
@@ -118,6 +119,7 @@ async function SidebarWithData({ currentSlug }: { currentSlug: string }) {
   return (
     <SidebarFilters
       transactionType="rent"
+      cities={cities}
       neighborhoods={neighborhoods}
       condominiums={condominiums}
       zones={zones}

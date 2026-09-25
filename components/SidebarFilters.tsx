@@ -17,13 +17,6 @@ import {
   formatIntBR,
 } from '@/lib/listing-params';
 
-const CITIES = [
-  { label: 'Todas as cidades', value: '' },
-  { label: 'São José dos Campos', value: 'São José dos Campos' },
-  { label: 'Jacareí', value: 'Jacareí' },
-  { label: 'Caçapava', value: 'Caçapava' },
-];
-
 // Presets de preço = atalhos que PREENCHEM os inputs Mín/Máx (não são um
 // estado próprio). min/max null = extremidade aberta (sem limite).
 const PRICE_PRESETS: Record<'sale' | 'rent', { label: string; min: number | null; max: number | null }[]> = {
@@ -54,8 +47,16 @@ interface NeighborhoodOption {
   property_count_rent?: number;
 }
 
+interface CityOption {
+  name: string;
+  property_count_sale: number;
+  property_count_rent: number;
+}
+
 interface SidebarFiltersProps {
   transactionType: 'sale' | 'rent';
+  /** Cidades com imóvel publicado (getCities) — antes era lista fixa. */
+  cities?: CityOption[];
   neighborhoods?: NeighborhoodOption[];
   condominiums?: { id: string; name: string; city: string | null; neighborhood: string | null; property_count: number }[];
   /** Zonas disponíveis (nome + contagem). Filtro por ?zona=<nome>. */
@@ -71,6 +72,7 @@ function normalize(s: string): string {
 
 export default function SidebarFilters({
   transactionType,
+  cities = [],
   neighborhoods = [],
   condominiums = [],
   zones = [],
@@ -204,6 +206,21 @@ export default function SidebarFilters({
     transactionType === 'sale'
       ? b.property_count_sale ?? b.property_count
       : b.property_count_rent ?? b.property_count;
+
+  // Cidades com imóvel visível nesta transação, mais imóveis primeiro. A
+  // cidade já aplicada (URL) fica na lista mesmo zerada, senão o <select>
+  // mostraria "Todas as cidades" com o filtro ainda ativo.
+  const cityOptions = useMemo(() => {
+    const countFor = (c: CityOption) =>
+      transactionType === 'sale' ? c.property_count_sale : c.property_count_rent;
+    const opts = cities
+      .filter((c) => countFor(c) > 0 || c.name === draft.cidade)
+      .sort((a, b) => countFor(b) - countFor(a) || a.name.localeCompare(b.name, 'pt-BR'));
+    if (draft.cidade && !opts.some((c) => c.name === draft.cidade)) {
+      opts.push({ name: draft.cidade, property_count_sale: 0, property_count_rent: 0 });
+    }
+    return opts;
+  }, [cities, transactionType, draft.cidade]);
 
   // Bairros com imóvel visível nesta transação, na cidade escolhida
   const bairroOptions = useMemo(
@@ -465,8 +482,9 @@ export default function SidebarFilters({
                   onChange={(e) => handleCidade(e.target.value)}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-black bg-white focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red outline-none"
                 >
-                  {CITIES.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
+                  <option value="">Todas as cidades</option>
+                  {cityOptions.map((c) => (
+                    <option key={c.name} value={c.name}>{c.name}</option>
                   ))}
                 </select>
               </div>

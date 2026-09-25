@@ -684,6 +684,56 @@ export const getZones = unstable_cache(
 );
 
 /**
+ * Cidades com imóvel publicado, pra popular o filtro de cidade do site.
+ * Antes era uma lista fixa (SJC/Jacareí/Caçapava) e imóvel cadastrado em
+ * outra cidade ficava sem filtro. Contagem por transação (sale_rent conta
+ * nas duas) pra que /comprar e /alugar só ofereçam cidade com resultado.
+ * Ordem: mais imóveis primeiro — SJC continua no topo sem hardcode.
+ */
+export interface CityOption {
+  name: string;
+  property_count_sale: number;
+  property_count_rent: number;
+}
+
+export const getCities = unstable_cache(
+  async (): Promise<CityOption[]> => {
+    const supabase = createServerClient();
+    const counts: Record<string, CityOption> = {};
+    let offset = 0;
+    while (true) {
+      const { data } = await supabase
+        .from('properties')
+        .select('city, transaction_type')
+        .eq('is_published', true).in('status', PUBLIC_STATUSES)
+        .not('city', 'is', null)
+        .range(offset, offset + 999);
+      if (!data || data.length === 0) break;
+      for (const r of data as { city: string | null; transaction_type: string | null }[]) {
+        // O filtro compara city com eq() exato, então o valor oferecido tem
+        // que ser o gravado no banco — só descarta vazio.
+        const name = r.city;
+        if (!name || !name.trim()) continue;
+        const c = (counts[name] ??= { name, property_count_sale: 0, property_count_rent: 0 });
+        const t = r.transaction_type;
+        if (t === 'sale' || t === 'sale_rent') c.property_count_sale++;
+        if (t === 'rent' || t === 'sale_rent') c.property_count_rent++;
+      }
+      if (data.length < 1000) break;
+      offset += 1000;
+    }
+    return Object.values(counts).sort(
+      (a, b) =>
+        b.property_count_sale + b.property_count_rent -
+          (a.property_count_sale + a.property_count_rent) ||
+        a.name.localeCompare(b.name, 'pt-BR')
+    );
+  },
+  ['cities-with-count'],
+  { revalidate: 600 }
+);
+
+/**
  * Busca bairro pelo slug.
  * Usado para texto SEO nas páginas de listagem por bairro.
  */
