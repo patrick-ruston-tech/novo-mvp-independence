@@ -66,8 +66,10 @@ export interface Property {
   state: string;
   neighborhood: string;
   address: string | null;
-  street_number: string | null;
-  complement: string | null;
+  // Número e complemento não são lidos pelo site (privacidade de endereço,
+  // lib/property-address.ts) nem liberados para a anon key.
+  street_number?: string | null;
+  complement?: string | null;
   postal_code: string | null;
   latitude: number | null;
   longitude: number | null;

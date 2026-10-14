@@ -325,7 +325,33 @@ export function extractCodeFromSlug(slug: string): string | null {
   return m[1].toUpperCase().replace(/-/g, '_');
 }
 
-const PROPERTY_SELECT = '*, condominium:condominium_id (id, name)';
+// Colunas de `properties` liberadas para a anon key (GRANT por coluna em
+// painel-admin/scripts/sql/32_rls_acesso_publico.sql). Ficam de fora dados
+// internos e a privacidade de endereço: proprietário, chaves, matrícula,
+// observações, termos de exclusividade, número e complemento. Coluna nova
+// que o site precise ler entra aqui E no GRANT do SQL — `*` dá erro de
+// permissão para a anon.
+const PROPERTY_PUBLIC_COLUMNS = `
+  id, external_id, slug, status, featured, publication_type, transaction_type,
+  price_sale, price_rent, price_condo, price_iptu, category, property_type,
+  title, description, city, state, neighborhood, address, postal_code,
+  latitude, longitude, living_area, lot_area, bedrooms, bathrooms, suites,
+  garages, unit_floor, year_built, features, images, video_url, detail_url,
+  listed_at, synced_at, created_at, updated_at, is_discover, is_launch,
+  launch_id, zone, property_subtype, purpose, phase, construction_year,
+  property_standard, location_standard, commercial_status, cep, street, block,
+  commercial_neighborhood, hide_address, condominium_id, price_sale_min,
+  price_sale_max, price_rent_min, price_rent_max, rent_type, iptu_installment,
+  iptu_value, accepts_financing, accepts_exchange, hide_price, rooms,
+  half_baths, ceiling_height, hobby_box, land_area, built_area, hectares,
+  topography, sun_position, face, furnished, virtual_tour_url, is_published,
+  amenities_items, amenities_characteristics, amenities_leisure,
+  amenities_closets, amenities_heating, amenities_flooring,
+  amenities_condo_leisure, amenities_condo_infra, floor_number,
+  watermarked_at, featured_position, discover_position
+`;
+
+const PROPERTY_SELECT = `${PROPERTY_PUBLIC_COLUMNS}, condominium:condominium_id (id, name)`;
 
 /**
  * Busca imóvel completo pelo slug.
@@ -764,10 +790,16 @@ export const getNeighborhoodBySlug = cache(async function getNeighborhoodBySlug(
  * Cria um novo lead (formulário de contato).
  * Chamado client-side via Server Action ou API Route.
  */
-export async function createLead(lead: Lead): Promise<{ success: boolean; error?: string }> {
+export async function createLead(lead: Lead): Promise<{ success: boolean; error?: string; id?: string }> {
   const supabase = createServerClient();
 
+  // O id nasce aqui para o INSERT não precisar de RETURNING (a anon key só
+  // tem INSERT em leads, sem SELECT) e para o chamador gravar os ids do GHL
+  // exatamente nesta linha.
+  const id = crypto.randomUUID();
+
   const { error } = await supabase.from('leads').insert({
+    id,
     name: lead.name,
     email: lead.email || null,
     phone: lead.phone,
@@ -782,7 +814,7 @@ export async function createLead(lead: Lead): Promise<{ success: boolean; error?
     return { success: false, error: error.message };
   }
 
-  return { success: true };
+  return { success: true, id };
 }
 
 /**
@@ -794,7 +826,12 @@ export async function createPropertySubmission(
 ): Promise<{ success: boolean; error?: string; id?: string }> {
   const supabase = createServerClient();
 
-  const { data, error } = await supabase.from('property_submissions').insert({
+  // Id gerado aqui pelo mesmo motivo do createLead: sem RETURNING, o INSERT
+  // funciona só com a policy de INSERT da anon key.
+  const id = crypto.randomUUID();
+
+  const { error } = await supabase.from('property_submissions').insert({
+    id,
     owner_name: submission.owner_name,
     owner_email: submission.owner_email || null,
     owner_phone: submission.owner_phone,
@@ -809,14 +846,14 @@ export async function createPropertySubmission(
     price_estimate: submission.price_estimate || null,
     description: submission.description || null,
     images: submission.images || [],
-  }).select('id').single();
+  });
 
   if (error) {
     console.error('createPropertySubmission error:', error);
     return { success: false, error: error.message };
   }
 
-  return { success: true, id: data?.id };
+  return { success: true, id };
 }
 
 // ============================================================
@@ -830,9 +867,9 @@ export const getHomeStats = unstable_cache(
   async () => {
     const supabase = createServerClient();
     const [saleRes, rentRes, neighRes] = await Promise.all([
-      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('is_published', true).in('status', PUBLIC_STATUSES).in('transaction_type', ['sale', 'sale_rent']),
-      supabase.from('properties').select('*', { count: 'exact', head: true }).eq('is_published', true).in('status', PUBLIC_STATUSES).in('transaction_type', ['rent', 'sale_rent']),
-      supabase.from('neighborhoods').select('*', { count: 'exact', head: true }),
+      supabase.from('properties').select('id', { count: 'exact', head: true }).eq('is_published', true).in('status', PUBLIC_STATUSES).in('transaction_type', ['sale', 'sale_rent']),
+      supabase.from('properties').select('id', { count: 'exact', head: true }).eq('is_published', true).in('status', PUBLIC_STATUSES).in('transaction_type', ['rent', 'sale_rent']),
+      supabase.from('neighborhoods').select('id', { count: 'exact', head: true }),
     ]);
     return {
       total_sale: saleRes.count ?? 0,

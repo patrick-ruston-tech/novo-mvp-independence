@@ -4,13 +4,16 @@ import { createLead, createPropertySubmission } from '@/lib/queries';
 import { processLeadFromSite } from '@/lib/ghl';
 import { getRouletteTag } from '@/lib/roulette';
 import type { Lead, PropertySubmission } from '@/types/property';
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
  * Server Action: enviar lead (formulário de contato no detalhe do imóvel)
  * 1. Salva no Supabase
  * 2. Cria contato no GHL com tag "lead-imovel"
  * 3. Atualiza o lead no Supabase com o ghl_contact_id
+ *
+ * Leitura do imóvel e gravação dos ids do GHL usam service role
+ * (createAdminClient): a anon key só pode INSERIR lead, não ler nem alterar.
  */
 export async function submitLeadAction(formData: FormData) {
   const lead: Lead = {
@@ -39,7 +42,7 @@ export async function submitLeadAction(formData: FormData) {
   let linksNote: string | undefined;
   if (lead.property_id) {
     try {
-      const supabase = createServerClient();
+      const supabase = createAdminClient();
       const { data } = await supabase
         .from('properties')
         .select('external_id, slug, transaction_type, price_sale, price_rent, property_type, is_launch')
@@ -82,30 +85,20 @@ export async function submitLeadAction(formData: FormData) {
       extraTags: rouletteTag ? [rouletteTag] : undefined,
     });
 
-    if (ghlResult.contactId) {
-      const supabase = createServerClient();
-
-      // Busca o lead mais recente com esse telefone
-      const { data: recentLead } = await supabase
+    if (ghlResult.contactId && result.id) {
+      // Grava também o opportunity id — sem ele o lead fica "órfão" no
+      // espelho de relatórios do painel (não vincula) e o guard
+      // anti-duplicata do painel não enxerga esta opportunity.
+      // Pelo id do INSERT, não por "lead mais recente com esse telefone":
+      // dois envios seguidos do mesmo telefone trocavam os ids entre si.
+      const supabase = createAdminClient();
+      await supabase
         .from('leads')
-        .select('id')
-        .eq('phone', lead.phone)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (recentLead) {
-        // Grava também o opportunity id — sem ele o lead fica "órfão" no
-        // espelho de relatórios do painel (não vincula) e o guard
-        // anti-duplicata do painel não enxerga esta opportunity.
-        await supabase
-          .from('leads')
-          .update({
-            ghl_contact_id: ghlResult.contactId,
-            ghl_opportunity_id: ghlResult.opportunityId,
-          })
-          .eq('id', recentLead.id);
-      }
+        .update({
+          ghl_contact_id: ghlResult.contactId,
+          ghl_opportunity_id: ghlResult.opportunityId,
+        })
+        .eq('id', result.id);
     }
   } catch (e) {
     console.error('GHL sync error:', e);
@@ -180,7 +173,7 @@ export async function submitPropertyAction(formData: FormData) {
     });
 
     if (ghlResult.contactId && submissionId) {
-      const supabase = createServerClient();
+      const supabase = createAdminClient();
       // ghl_opportunity_id habilita a ROLETA DE CAPTAÇÃO do painel: o tick
       // acha submissões com opportunity sem distribuição e roda o rodízio.
       await supabase
