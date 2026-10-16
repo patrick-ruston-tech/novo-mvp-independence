@@ -67,6 +67,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/avaliar-imovel-gratis" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  Avaliar Imóvel Grátis
+                </Link>
+              </li>
+              <li>
                 <Link href="/sobre" className="text-sm text-gray-400 hover:text-white transition-colors">
                   Sobre Nós
                 </Link>

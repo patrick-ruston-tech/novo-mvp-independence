@@ -54,7 +54,7 @@ export default function Header() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-6">
+          <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
@@ -72,6 +72,14 @@ export default function Header() {
 
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center gap-3">
+            <Link
+              href="/avaliar-imovel-gratis"
+              className="border border-brand-red text-brand-red hover:bg-brand-red hover:text-white text-sm font-semibold px-3 xl:px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+            >
+              {/* Texto curto entre 1024 e 1279px: com o completo o cabeçalho não cabe. */}
+              <span className="xl:hidden">Avaliar grátis</span>
+              <span className="hidden xl:inline">Avaliar Imóvel Grátis</span>
+            </Link>
             <Link
               href="/anunciar"
               className="bg-brand-red hover:bg-brand-dark-red text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
@@ -135,6 +143,15 @@ export default function Header() {
                   {link.name}
                 </Link>
               ))}
+              <Link
+                href="/avaliar-imovel-gratis"
+                className={`block px-6 py-4 border-b border-gray-100 text-base font-semibold transition-colors ${
+                  isActive('/avaliar-imovel-gratis') ? 'bg-gray-50 text-brand-red' : 'text-brand-red hover:bg-gray-50'
+                }`}
+                onClick={closeMenu}
+              >
+                Avaliar Imóvel Grátis
+              </Link>
               <a
                 href="https://independenceimoveis.sicadiweb.com.br/"
                 target="_blank"
