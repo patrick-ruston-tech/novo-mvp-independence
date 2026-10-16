@@ -1,3 +1,5 @@
+import { decidirUnificacao, type ContatoGhl, type DecisaoContato } from '@/lib/contato-unificado';
+
 const GHL_API_KEY = process.env.GHL_API_KEY || '';
 const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID || '';
 const GHL_BASE_URL = 'https://services.leadconnectorhq.com';
@@ -24,7 +26,59 @@ function getHeaders(): GHLHeaders {
 }
 
 /**
- * Cria ou atualiza contato no GHL
+ * Telefone brasileiro em E.164 (mesma regra do painel): "12981031077" →
+ * "+5512981031077". Sem isso a busca por telefone do GHL não acha o
+ * contato que o painel gravou já em E.164.
+ */
+function toE164BR(phone: string | undefined): string | undefined {
+  if (!phone) return phone;
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return phone;
+  if (digits.startsWith('55') && digits.length >= 12) return `+${digits}`;
+  if (digits.length === 10 || digits.length === 11) return `+55${digits}`;
+  if (digits.length > 11) return `+${digits}`;
+  return digits;
+}
+
+function nomeParaGhl(name: string): { firstName: string; lastName: string; name: string } {
+  const nameParts = name.trim().split(/\s+/);
+  return { firstName: nameParts[0] ?? '', lastName: nameParts.slice(1).join(' ') || '', name };
+}
+
+function customFieldsParaGhl(cfs?: { key: string; value: string }[]) {
+  return (cfs ?? []).map(cf => ({ id: cf.key, field_value: cf.value }));
+}
+
+/** Contato existente por e-mail ou telefone; ok=false se a busca falhou. */
+async function buscarContatoDuplicado(
+  campo: 'email' | 'number',
+  valor: string
+): Promise<{ ok: boolean; contato: ContatoGhl | null }> {
+  try {
+    const qs = new URLSearchParams({ locationId: GHL_LOCATION_ID, [campo]: valor });
+    const response = await fetch(`${GHL_BASE_URL}/contacts/search/duplicate?${qs}`, { headers: getHeaders() });
+    if (!response.ok) {
+      console.error(`GHL buscarContatoDuplicado(${campo}) error:`, response.status, (await response.text()).slice(0, 300));
+      return { ok: false, contato: null };
+    }
+    const c = (await response.json())?.contact;
+    if (!c?.id) return { ok: true, contato: null };
+    const nome = c.contactName ?? c.name ?? [c.firstName, c.lastName].filter(Boolean).join(' ');
+    return { ok: true, contato: { id: c.id, name: nome || null, email: c.email ?? null, phone: c.phone ?? null } };
+  } catch (error) {
+    console.error(`GHL buscarContatoDuplicado(${campo}) exception:`, error);
+    return { ok: false, contato: null };
+  }
+}
+
+/**
+ * Cria ou atualiza contato no GHL.
+ *
+ * Procura antes pelo e-mail e pelo telefone (lib/contato-unificado.ts, mesma
+ * regra do painel): mesma pessoa com dado novo atualiza o contato existente,
+ * com nota do dado anterior; e-mail de um contato e telefone de outro ficam
+ * no do e-mail, com nota de possível duplicado nos dois. Sem contato
+ * existente, ou se a busca falhar, segue no /contacts/upsert de sempre.
  */
 export async function createOrUpdateContact(data: {
   name: string;
@@ -33,28 +87,99 @@ export async function createOrUpdateContact(data: {
   tags?: string[];
   customFields?: { key: string; value: string }[];
 }): Promise<{ id: string } | null> {
-  try {
-    const nameParts = data.name.trim().split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ') || '';
+  const email = data.email?.trim() || undefined;
+  const phone = toE164BR(data.phone?.trim() || undefined);
 
-    const body: any = {
+  if (email || phone) {
+    const [porEmail, porTelefone] = await Promise.all([
+      email ? buscarContatoDuplicado('email', email) : Promise.resolve({ ok: true, contato: null }),
+      phone ? buscarContatoDuplicado('number', phone) : Promise.resolve({ ok: true, contato: null }),
+    ]);
+    if (porEmail.ok && porTelefone.ok) {
+      const decisao = decidirUnificacao({ name: data.name, email, phone }, porEmail.contato, porTelefone.contato);
+      if (decisao.tipo !== 'upsert') {
+        return atualizarContatoExistente(decisao, data);
+      }
+    }
+  }
+  return upsertContato({ ...data, email, phone });
+}
+
+/** Aplica a decisão de unificação num contato que já existe. Nunca perde o lead. */
+async function atualizarContatoExistente(
+  decisao: Exclude<DecisaoContato, { tipo: 'upsert' }>,
+  data: { tags?: string[]; customFields?: { key: string; value: string }[] }
+): Promise<{ id: string }> {
+  const id = decisao.contatoId;
+  const body: Record<string, unknown> = {};
+  if (decisao.patch.name) Object.assign(body, nomeParaGhl(decisao.patch.name));
+  if (decisao.tipo === 'atualizar') {
+    if (decisao.patch.email) body.email = decisao.patch.email;
+    if (decisao.patch.phone) body.phone = decisao.patch.phone;
+  }
+  const cfs = customFieldsParaGhl(data.customFields);
+  if (cfs.length > 0) body.customFields = cfs;
+
+  let nota = decisao.nota;
+  if (Object.keys(body).length > 0) {
+    try {
+      const response = await fetch(`${GHL_BASE_URL}/contacts/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        console.error('GHL atualizarContatoExistente error:', response.status, (await response.text()).slice(0, 300));
+        // O dado novo não entrou no cadastro — pelo menos fica na timeline.
+        if (decisao.tipo === 'atualizar' && (decisao.patch.email || decisao.patch.phone)) {
+          const novos = [decisao.patch.email && `e-mail ${decisao.patch.email}`, decisao.patch.phone && `telefone ${decisao.patch.phone}`]
+            .filter(Boolean)
+            .join(' e ');
+          nota = `Um novo lead informou ${novos}, mas o CRM recusou atualizar o cadastro. Confira os dados de contato.`;
+        }
+      }
+    } catch (error) {
+      console.error('GHL atualizarContatoExistente exception:', error);
+    }
+  }
+
+  if (data.tags && data.tags.length > 0) {
+    try {
+      const response = await fetch(`${GHL_BASE_URL}/contacts/${id}/tags`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ tags: data.tags }),
+      });
+      if (!response.ok) console.error('GHL addTags error:', response.status, (await response.text()).slice(0, 300));
+    } catch (error) {
+      console.error('GHL addTags exception:', error);
+    }
+  }
+
+  if (nota) await addContactNote(id, nota);
+  if (decisao.tipo === 'conflito') await addContactNote(decisao.outroContatoId, decisao.notaOutro);
+  return { id };
+}
+
+/** O caminho antigo: /contacts/upsert, o GHL decide pela configuração de duplicados. */
+async function upsertContato(data: {
+  name: string;
+  email?: string;
+  phone?: string;
+  tags?: string[];
+  customFields?: { key: string; value: string }[];
+}): Promise<{ id: string } | null> {
+  try {
+    const body: Record<string, unknown> = {
       locationId: GHL_LOCATION_ID,
-      firstName,
-      lastName,
-      name: data.name,
+      ...nomeParaGhl(data.name),
     };
 
     if (data.email) body.email = data.email;
     if (data.phone) body.phone = data.phone;
     if (data.tags) body.tags = data.tags;
-
-    if (data.customFields && data.customFields.length > 0) {
-      body.customFields = data.customFields.map(cf => ({
-        id: cf.key,
-        field_value: cf.value,
-      }));
-    }
+    const cfs = customFieldsParaGhl(data.customFields);
+    if (cfs.length > 0) body.customFields = cfs;
 
     const response = await fetch(`${GHL_BASE_URL}/contacts/upsert`, {
       method: 'POST',
